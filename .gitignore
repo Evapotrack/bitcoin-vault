@@ -1,6 +1,8 @@
 node_modules/
 dist/
 out/
+.webpack/
 .env
 *.enc
 .DS_Store
+package-lock.json
