@@ -97,13 +97,6 @@ export async function signAndBroadcast(
   for (const input of detail.inputs) {
     const utxo = utxos.find(u => u.txid === input.txid && u.vout === input.vout)!;
 
-    // Fetch the raw tx to get the script
-    const baseUrl = networkType === 'testnet'
-      ? 'https://mempool.space/testnet/api'
-      : 'https://mempool.space/api';
-    const txHexRes = await fetch(`${baseUrl}/tx/${input.txid}/hex`);
-    const txHex = await txHexRes.text();
-
     psbt.addInput({
       hash: input.txid,
       index: input.vout,
@@ -157,9 +150,6 @@ export async function signAndBroadcast(
   }
 
   const txid = await broadcastRes.text();
-
-  // Zero the seed copy
-  seed.fill(0);
 
   return txid;
 }

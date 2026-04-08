@@ -64,7 +64,7 @@ export async function checkPayment(
 
   const txs: Array<{
     txid: string;
-    status: { confirmed: boolean };
+    status: { confirmed: boolean; block_height?: number };
     vout: Array<{ scriptpubkey_address?: string; value: number }>;
   }> = await res.json();
 
@@ -72,9 +72,11 @@ export async function checkPayment(
     for (const output of tx.vout) {
       if (output.scriptpubkey_address === address) {
         if (output.value >= expectedAmount) {
+          // Verify block_height exists — don't trust confirmed boolean alone
+          const confirmed = tx.status.confirmed === true && typeof tx.status.block_height === 'number';
           return {
             found: true,
-            confirmed: tx.status.confirmed,
+            confirmed,
             txid: tx.txid,
             amount: output.value,
           };

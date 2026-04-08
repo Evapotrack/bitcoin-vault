@@ -28,6 +28,7 @@ export interface VaultFile {
   addedAt: number;
   protectionCostSats?: number;
   protectionFrequency?: UnlockFrequency;
+  lastProtectionPayment?: number;
   deletionCostSats?: number;
 }
 
@@ -38,6 +39,7 @@ export interface VaultFolder {
   createdAt: number;
   protectionCostSats?: number;
   protectionFrequency?: UnlockFrequency;
+  lastProtectionPayment?: number;
   deletionCostSats?: number;
 }
 

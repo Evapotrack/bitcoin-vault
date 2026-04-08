@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, clipboard, session } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as keychain from './keychain';
@@ -26,8 +26,11 @@ let currentNetworkType: NetworkType = 'testnet';
 let currentVaultPath: string | null = null;
 let currentIndex: VaultIndex | null = null;
 let autoLockTimer: ReturnType<typeof setTimeout> | null = null;
+// Track protection payments for the current session (cleared on lock)
+const sessionAccessGrants = new Set<string>(); // fileId or folderId
 
 function clearSensitiveState(): void {
+  sessionAccessGrants.clear();
   if (currentSeed) {
     currentSeed.fill(0);
     currentSeed = null;
@@ -77,6 +80,19 @@ const createWindow = (): void => {
       nodeIntegration: false,
       sandbox: false, // needed for preload to work with IPC
     },
+  });
+
+  // Dynamic CSP: dev allows unsafe-eval (webpack HMR), prod does not
+  const isDev = process.env.NODE_ENV === 'development';
+  const scriptSrc = isDev ? "'self' 'unsafe-eval'" : "'self'";
+  const csp = `default-src 'self'; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline'; connect-src 'self'`;
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp],
+      },
+    });
   });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -270,14 +286,18 @@ ipcMain.handle('open-file', (_e, fileId: string) => {
 
   // Check per-file protection — return protection info if payment required
   if (file.protectionCostSats && file.protectionCostSats > 0) {
-    return { protected: true, costSats: file.protectionCostSats, frequency: file.protectionFrequency };
+    if (!isProtectionGranted(file.id, file.protectionFrequency, file.lastProtectionPayment)) {
+      return { protected: true, costSats: file.protectionCostSats, frequency: file.protectionFrequency };
+    }
   }
 
   // Check parent folder protection
   if (file.folderId) {
     const folder = currentIndex.folders.find(f => f.id === file.folderId);
     if (folder?.protectionCostSats && folder.protectionCostSats > 0) {
-      return { protected: true, costSats: folder.protectionCostSats, frequency: folder.protectionFrequency };
+      if (!isProtectionGranted(folder.id, folder.protectionFrequency, folder.lastProtectionPayment)) {
+        return { protected: true, costSats: folder.protectionCostSats, frequency: folder.protectionFrequency };
+      }
     }
   }
 
@@ -403,13 +423,16 @@ ipcMain.handle('broadcast-transaction', async (_e, toAddress: string, amountSats
   const utxos = await utxoModule.fetchAllUtxos(addresses, currentNetworkType);
   const changeAddr = wallet.deriveChangeAddress(currentSeed, 0, currentNetworkType).address;
 
-  // Create a copy of seed for signing (will be zeroed by signAndBroadcast)
   const seedCopy = Buffer.from(currentSeed);
-  const txid = await txModule.signAndBroadcast(
-    utxos, toAddress, amountSats, feeRate, changeAddr,
-    seedCopy, currentIndex.addressIndex, currentNetworkType
-  );
-  return txid;
+  try {
+    const txid = await txModule.signAndBroadcast(
+      utxos, toAddress, amountSats, feeRate, changeAddr,
+      seedCopy, currentIndex.addressIndex, currentNetworkType
+    );
+    return txid;
+  } finally {
+    seedCopy.fill(0);
+  }
 });
 
 // Util
@@ -509,6 +532,108 @@ ipcMain.handle('set-folder-deletion-cost', (_e, folderId: string, costSats: numb
   if (costSats < 1500) throw new Error('Minimum deletion cost is 1,500 sats');
   if (folder.deletionCostSats) throw new Error('Deletion cost is permanent and already set');
   folder.deletionCostSats = costSats;
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex;
+});
+
+// ===== PROTECTION/DELETION PAYMENT FLOW =====
+
+function isProtectionGranted(id: string, frequency?: string, lastPayment?: number): boolean {
+  if (frequency === 'per-session') return sessionAccessGrants.has(id);
+  if (!lastPayment) return false;
+  const now = Date.now();
+  const elapsed = now - lastPayment;
+  if (frequency === 'daily') return elapsed < 24 * 60 * 60 * 1000;
+  if (frequency === 'weekly') return elapsed < 7 * 24 * 60 * 60 * 1000;
+  if (frequency === 'monthly') return elapsed < 30 * 24 * 60 * 60 * 1000;
+  return false;
+}
+
+ipcMain.handle('get-protection-address', (_e, fileId: string) => {
+  if (!currentSeed || !currentIndex) throw new Error('Vault not ready');
+  const file = currentIndex.files.find(f => f.id === fileId);
+  const folder = currentIndex.folders.find(f => f.id === fileId);
+  const target = file || folder;
+  if (!target) throw new Error('Not found');
+  const costSats = file?.protectionCostSats || folder?.protectionCostSats || 0;
+  if (!costSats) throw new Error('Not protected');
+  const { address } = wallet.deriveAddress(currentSeed, currentIndex.addressIndex, currentNetworkType);
+  currentIndex.addressIndex++;
+  if (currentVaultPath && currentMasterKey) vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return { address, costSats };
+});
+
+ipcMain.handle('poll-protection-payment', async (_e, address: string, amountSats: number) => {
+  const result = await utxoModule.checkPayment(address, amountSats, currentNetworkType);
+  if (result.found && result.confirmed && result.txid) {
+    if (currentIndex && currentIndex.usedTxids.includes(result.txid)) {
+      return { confirmed: false, error: 'Transaction already used' };
+    }
+    if (currentIndex) {
+      currentIndex.usedTxids.push(result.txid);
+      currentIndex.usedAddresses.push(address);
+      if (currentVaultPath && currentMasterKey) vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+    }
+    return { confirmed: true, txid: result.txid };
+  }
+  return { confirmed: false, detected: result.found };
+});
+
+ipcMain.handle('confirm-protection-access', (_e, fileId: string, txid: string) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) throw new Error('Vault not ready');
+  const file = currentIndex.files.find(f => f.id === fileId);
+  const folder = currentIndex.folders.find(f => f.id === fileId);
+  const target = file || folder;
+  if (!target) throw new Error('Not found');
+  const freq = file?.protectionFrequency || folder?.protectionFrequency;
+  if (freq === 'per-session') {
+    sessionAccessGrants.add(fileId);
+  } else {
+    // Store timestamp for time-based frequencies
+    if (file) file.lastProtectionPayment = Date.now();
+    if (folder) folder.lastProtectionPayment = Date.now();
+    vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  }
+  // Open the file if it's a file
+  if (file) {
+    vaultFiles.accessFile(fileId, file.name, currentVaultPath, currentMasterKey);
+  }
+});
+
+ipcMain.handle('get-deletion-address', (_e, fileId: string) => {
+  if (!currentSeed || !currentIndex) throw new Error('Vault not ready');
+  const file = currentIndex.files.find(f => f.id === fileId);
+  if (!file) throw new Error('File not found');
+  const costSats = file.deletionCostSats || 0;
+  if (!costSats) throw new Error('No deletion cost set');
+  const { address } = wallet.deriveAddress(currentSeed, currentIndex.addressIndex, currentNetworkType);
+  currentIndex.addressIndex++;
+  if (currentVaultPath && currentMasterKey) vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return { address, costSats };
+});
+
+ipcMain.handle('poll-deletion-payment', async (_e, address: string, amountSats: number) => {
+  const result = await utxoModule.checkPayment(address, amountSats, currentNetworkType);
+  if (result.found && result.confirmed && result.txid) {
+    if (currentIndex && currentIndex.usedTxids.includes(result.txid)) {
+      return { confirmed: false, error: 'Transaction already used' };
+    }
+    if (currentIndex) {
+      currentIndex.usedTxids.push(result.txid);
+      currentIndex.usedAddresses.push(address);
+      if (currentVaultPath && currentMasterKey) vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+    }
+    return { confirmed: true, txid: result.txid };
+  }
+  return { confirmed: false, detected: result.found };
+});
+
+ipcMain.handle('confirm-deletion', (_e, fileId: string, _txid: string) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) throw new Error('Vault not ready');
+  const file = currentIndex.files.find(f => f.id === fileId);
+  if (!file) throw new Error('File not found');
+  vaultFiles.deleteEncryptedFile(fileId, currentVaultPath);
+  currentIndex.files = currentIndex.files.filter(f => f.id !== fileId);
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
   return currentIndex;
 });

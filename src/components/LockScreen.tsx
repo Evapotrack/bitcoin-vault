@@ -166,10 +166,10 @@ export function LockScreen() {
           {paymentStatus === 'detected' && (
             <div className="space-y-3">
               <span className="text-orange-400">Transaction detected. Waiting for confirmation...</span>
-              <div className="flex justify-center gap-2 pt-1">
-                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.2s' }} />
-                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1.2s' }} />
-                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1.2s' }} />
+              <div className="flex justify-center gap-4 pt-2">
+                <span className="w-5 h-5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.8s' }} />
+                <span className="w-5 h-5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.8s' }} />
+                <span className="w-5 h-5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.8s' }} />
               </div>
             </div>
           )}

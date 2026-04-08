@@ -54,6 +54,14 @@ export interface BitcoinVaultAPI {
   proofOfLifeConfirmed(): Promise<void>;
   checkDeadManBypass(): Promise<boolean>;
 
+  // Protection/Deletion Payment
+  getProtectionAddress(fileId: string): Promise<{ address: string; costSats: number }>;
+  pollProtectionPayment(address: string, amountSats: number): Promise<{ confirmed: boolean; detected?: boolean; txid?: string }>;
+  confirmProtectionAccess(fileId: string, txid: string): Promise<void>;
+  getDeletionAddress(fileId: string): Promise<{ address: string; costSats: number }>;
+  pollDeletionPayment(address: string, amountSats: number): Promise<{ confirmed: boolean; detected?: boolean; txid?: string }>;
+  confirmDeletion(fileId: string, txid: string): Promise<VaultIndex>;
+
   // Fee Estimation
   getFeeEstimateDetail(): Promise<{
     rates: { fast: number; medium: number; slow: number };

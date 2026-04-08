@@ -214,12 +214,14 @@ THREAT: Replay attack with previous txid
 THREAT: Wrong amount accepted
     Attacker: Any (could be accidental or intentional)
     Attack: Send less than the required amount and have it accepted as valid.
-    Likelihood: LOW — strict exact matching by design
+    Likelihood: LOW — minimum amount matching by design
     Impact: MEDIUM — vault access at reduced cost
     Mitigation:
-        - S12: Exact amount matching. Below: rejected. Above: rejected.
+        - S12: Minimum amount matching (>=). Below: rejected. Above: accepted
+          (overpayment allowed — prevents user lockout from rounding or fee bumps).
         - Enforced in main process IPC, not UI.
-    Residual Risk: None if amount comparison is implemented correctly.
+        - Block height independently verified (not just confirmed boolean).
+    Residual Risk: Overpayment results in user paying more than required.
     Use integer comparison on satoshi values (no floating point).
 
 

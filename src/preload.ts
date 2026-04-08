@@ -66,6 +66,14 @@ contextBridge.exposeInMainWorld('bitcoinVault', {
   updateSettings: (updates: { autoLockMinutes?: number; denomination?: string }) =>
     ipcRenderer.invoke('update-settings', updates),
 
+  // Protection/Deletion Payment
+  getProtectionAddress: (fileId: string) => ipcRenderer.invoke('get-protection-address', fileId),
+  pollProtectionPayment: (address: string, amountSats: number) => ipcRenderer.invoke('poll-protection-payment', address, amountSats),
+  confirmProtectionAccess: (fileId: string, txid: string) => ipcRenderer.invoke('confirm-protection-access', fileId, txid),
+  getDeletionAddress: (fileId: string) => ipcRenderer.invoke('get-deletion-address', fileId),
+  pollDeletionPayment: (address: string, amountSats: number) => ipcRenderer.invoke('poll-deletion-payment', address, amountSats),
+  confirmDeletion: (fileId: string, txid: string) => ipcRenderer.invoke('confirm-deletion', fileId, txid),
+
   // Util
   touchActivity: () => ipcRenderer.invoke('touch-activity'),
   getNetworkType: () => ipcRenderer.invoke('get-network-type'),

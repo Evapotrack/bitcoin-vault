@@ -20,13 +20,15 @@ export function WalletView() {
 
   const refresh = async () => {
     try {
-      const [bal, utxoList, feeEstimates, feeEst] = await Promise.all([
+      const [bal, utxoList, feeEstimates] = await Promise.all([
         window.bitcoinVault.getBalance(),
         window.bitcoinVault.getUtxos(),
         window.bitcoinVault.getFees(),
-        window.bitcoinVault.getFeeEstimateDetail(),
       ]);
       setBalance(bal); setUtxos(utxoList); setFees(feeEstimates); setFeeRate(feeEstimates.medium);
+    } catch { /* ignore */ }
+    try {
+      const feeEst = await window.bitcoinVault.getFeeEstimateDetail();
       setFeeDetail(feeEst);
     } catch { /* ignore */ }
   };
