@@ -73,6 +73,21 @@ No accounts. No subscriptions. No counterparty risk. One seed backs up everythin
 
 **The honest conclusion:** Bitcoin is not redundant here, but its value is more philosophical than purely practical. The economic friction is real. The proof-of-work verification is real. But the core functionality (encrypted files) would work without it. What Bitcoin adds is identity — this is a sovereignty tool, not just an encryption tool.
 
+## Who This Is For
+
+- **Personal document security.** Tax records, legal files, estate planning, insurance policies. Files you access occasionally with deliberate intent. The 10-minute unlock wait forces intentional access, not casual browsing.
+- **Credential backup.** Seed phrases for other wallets, recovery codes, API keys, SSH keys. Two independent security factors: the seed (something you know) and the on-chain payment (something you prove).
+- **Inheritance without third parties.** The dead man's switch enables controlled access after incapacity. Your inheritor needs only the seed and the backup folder. No lawyer, no cloud service. One sentence of instruction: "Install the app, enter these 12 words, point to the backup folder."
+- **Tiered access within a single vault.** A journalist protecting sources can set /sources/ at 5,000 sats per access while keeping /drafts/ at vault-level cost. A developer can lock /keys/ behind per-access payment while leaving /docs/ open after vault unlock.
+- **Proof of deliberate access.** Every unlock is a timestamped blockchain transaction. Provides an auditable record that access was intentional and authorized.
+
+## Who This Is NOT For
+
+- Anyone needing fast, frequent file access — use VeraCrypt or FileVault
+- Anyone storing significant Bitcoin — use hardware cold storage
+- Anyone requiring audited enterprise encryption — this is experimental
+- Teams or multi-user access — single seed, single user
+
 ## What This Is Not
 
 - **Not a replacement for VeraCrypt or FileVault.** Those tools are mature, audited, and battle-tested. This adds Bitcoin-based access control on top of encryption.
