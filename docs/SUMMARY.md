@@ -79,9 +79,16 @@ No accounts. No subscriptions. No counterparty risk. One seed backs up everythin
 - **Not a cold storage wallet.** This is a hot wallet for small amounts accumulated from unlock payments.
 - **Not audited software.** This is experimental. Use on testnet first. Do not trust it with irreplaceable files or significant Bitcoin.
 
+## V2 Features
+
+- **Per-file/folder protection** — Set custom sat cost and frequency for individual files and folders. Additional payment required to access protected items.
+- **UTXO consolidation** — Combine multiple small UTXOs into one at the lowest fee rate. Preview with full fee breakdown before confirming.
+- **Dead man's switch** — Configurable countdown (30-365 days). Send a proof-of-life payment to reset the timer. If the timer expires, the vault opens with seed only — no Bitcoin payment required. Designed for inheritance.
+- **Fee estimation display** — Current fee rates (fast/medium/slow) with estimated costs for unlock, send, and consolidation operations.
+
 ## Status
 
-V1 — core vault + wallet functional. Testnet ready. Open source.
+V2 — core vault + wallet + protection tiers + consolidation + dead man's switch. Testnet ready. Open source.
 
 Similar projects may exist — I haven't researched the space. This was built to explore the concept, not to compete with existing solutions.
 
