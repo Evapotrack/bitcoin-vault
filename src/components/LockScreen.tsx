@@ -65,11 +65,11 @@ export function LockScreen() {
         if (result.confirmed) {
           if (pollRef.current) clearInterval(pollRef.current);
           setPaymentStatus('confirmed');
-          // Brief delay then unlock
+          // Show confirmation screen for 2.5 seconds before unlocking
           setTimeout(() => {
             setUnlocked(true);
             setView('vault');
-          }, 1500);
+          }, 2500);
         } else if (result.detected) {
           setPaymentStatus('detected');
         }
@@ -164,10 +164,27 @@ export function LockScreen() {
             <span className="text-gray-400">Waiting for payment...</span>
           )}
           {paymentStatus === 'detected' && (
-            <span className="text-orange-400">Transaction detected. Waiting for confirmation...</span>
+            <div className="space-y-3">
+              <span className="text-orange-400">Transaction detected. Waiting for confirmation...</span>
+              <div className="flex justify-center gap-2 pt-1">
+                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.2s' }} />
+                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1.2s' }} />
+                <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1.2s' }} />
+              </div>
+            </div>
           )}
           {paymentStatus === 'confirmed' && (
-            <span className="text-white">Payment confirmed. Unlocking vault...</span>
+            <div className="space-y-3">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-orange-600/20 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <span className="text-white font-semibold">Payment confirmed</span>
+              <p className="text-gray-400 text-xs">Unlocking vault...</p>
+            </div>
           )}
           {paymentStatus === 'error' && (
             <span className="text-orange-400">{paymentError}</span>
