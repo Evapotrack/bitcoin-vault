@@ -20,12 +20,13 @@ export function WalletView() {
 
   const refresh = async () => {
     try {
-      const [bal, utxoList, feeEstimates] = await Promise.all([
-        window.bitcoinVault.getBalance(),
-        window.bitcoinVault.getUtxos(),
-        window.bitcoinVault.getFees(),
-      ]);
-      setBalance(bal); setUtxos(utxoList); setFees(feeEstimates); setFeeRate(feeEstimates.medium);
+      // Sequential to avoid mempool.space rate limiting (each scans all derived addresses)
+      const utxoList = await window.bitcoinVault.getUtxos();
+      setUtxos(utxoList);
+      const bal = utxoList.reduce((sum: number, u: { value: number }) => sum + u.value, 0);
+      setBalance(bal);
+      const feeEstimates = await window.bitcoinVault.getFees();
+      setFees(feeEstimates); setFeeRate(feeEstimates.medium);
     } catch { /* ignore */ }
     try {
       const feeEst = await window.bitcoinVault.getFeeEstimateDetail();

@@ -65,11 +65,6 @@ export function LockScreen() {
         if (result.confirmed) {
           if (pollRef.current) clearInterval(pollRef.current);
           setPaymentStatus('confirmed');
-          // Show confirmation screen for 2.5 seconds before unlocking
-          setTimeout(() => {
-            setUnlocked(true);
-            setView('vault');
-          }, 2500);
         } else if (result.detected) {
           setPaymentStatus('detected');
         }
@@ -183,7 +178,10 @@ export function LockScreen() {
                 </div>
               </div>
               <span className="text-white font-semibold">Payment confirmed</span>
-              <p className="text-gray-400 text-xs">Unlocking vault...</p>
+              <button onClick={() => { setUnlocked(true); setView('vault'); }}
+                className="mt-2 px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-semibold transition-colors">
+                Open Vault
+              </button>
             </div>
           )}
           {paymentStatus === 'error' && (

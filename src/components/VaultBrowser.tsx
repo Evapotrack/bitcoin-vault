@@ -15,6 +15,8 @@ export function VaultBrowser() {
   const [protectCost, setProtectCost] = useState('');
   const [protectFreq, setProtectFreq] = useState<UnlockFrequency>('per-session');
   const [importing, setImporting] = useState(false);
+  const [deletionCostTarget, setDeletionCostTarget] = useState<{ type: 'file' | 'folder'; id: string; name: string; currentCost?: number } | null>(null);
+  const [deletionCostInput, setDeletionCostInput] = useState('');
 
   // Protection payment flow
   const [accessPayment, setAccessPayment] = useState<{ fileId: string; name: string; costSats: number; frequency: string; address: string } | null>(null);
@@ -95,6 +97,23 @@ export function VaultBrowser() {
     setProtectTarget({ type, id, name, currentCost: cost, currentFreq: freq });
     setProtectCost(cost ? String(cost) : '');
     setProtectFreq((freq as UnlockFrequency) || 'per-session');
+  };
+
+  const handleSetDeletionCost = async () => {
+    if (!deletionCostTarget || !deletionCostInput) return;
+    const cost = parseInt(deletionCostInput);
+    if (isNaN(cost) || cost < 1500) return;
+    try {
+      if (deletionCostTarget.type === 'file') {
+        const updated = await window.bitcoinVault.setFileDeletionCost(deletionCostTarget.id, cost);
+        if (updated) setVaultIndex(updated);
+      } else {
+        const updated = await window.bitcoinVault.setFolderDeletionCost(deletionCostTarget.id, cost);
+        if (updated) setVaultIndex(updated);
+      }
+    } catch { /* ignore */ }
+    setDeletionCostTarget(null);
+    setDeletionCostInput('');
   };
 
   // --- Protection Payment Flow ---
@@ -205,6 +224,15 @@ export function VaultBrowser() {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   };
 
+  const deletionBadge = (cost?: number) => {
+    if (!cost) return null;
+    return (
+      <span className="text-gray-500 text-xs font-mono">
+        {cost.toLocaleString()} sats/delete
+      </span>
+    );
+  };
+
   const protectionBadge = (cost?: number, freq?: string) => {
     if (!cost) return null;
     return (
@@ -293,10 +321,15 @@ export function VaultBrowser() {
                 <span className="text-orange-400 text-lg">&#128193;</span>
                 <span className="text-white text-sm">{folder.name}</span>
                 {protectionBadge(folder.protectionCostSats, folder.protectionFrequency)}
+                {deletionBadge(folder.deletionCostSats)}
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={e => { e.stopPropagation(); openProtectDialog('folder', folder.id, folder.name, folder.protectionCostSats, folder.protectionFrequency); }}
                   className="text-gray-600 hover:text-orange-400 text-xs">Protect</button>
+                {!folder.deletionCostSats && (
+                  <button onClick={e => { e.stopPropagation(); setDeletionCostTarget({ type: 'folder', id: folder.id, name: folder.name }); setDeletionCostInput(''); }}
+                    className="text-gray-600 hover:text-orange-400 text-xs">Lock Delete</button>
+                )}
                 <button onClick={e => { e.stopPropagation(); setDeleteTarget({ type: 'folder', id: folder.id, name: folder.name }); }}
                   className="text-gray-600 hover:text-white text-xs">Delete</button>
               </div>
@@ -316,6 +349,7 @@ export function VaultBrowser() {
                 <span className="text-gray-400 text-lg">&#128196;</span>
                 <span className="text-white text-sm truncate">{file.name}</span>
                 {protectionBadge(file.protectionCostSats, file.protectionFrequency)}
+                {deletionBadge(file.deletionCostSats)}
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-gray-500 text-xs">{formatSize(file.originalSize)}</span>
@@ -323,6 +357,10 @@ export function VaultBrowser() {
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={e => { e.stopPropagation(); openProtectDialog('file', file.id, file.name, file.protectionCostSats, file.protectionFrequency); }}
                     className="text-gray-600 hover:text-orange-400 text-xs">Protect</button>
+                  {!file.deletionCostSats && (
+                    <button onClick={e => { e.stopPropagation(); setDeletionCostTarget({ type: 'file', id: file.id, name: file.name }); setDeletionCostInput(''); }}
+                      className="text-gray-600 hover:text-orange-400 text-xs">Lock Delete</button>
+                  )}
                   <button onClick={e => { e.stopPropagation(); setDeleteTarget({ type: 'file', id: file.id, name: file.name }); }}
                     className="text-gray-600 hover:text-white text-xs">Delete</button>
                 </div>
@@ -382,6 +420,26 @@ export function VaultBrowser() {
                 <button onClick={handleSetProtection} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-500">Set</button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Set deletion cost overlay */}
+      {deletionCostTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <h3 className="text-white font-semibold text-lg">Lock Deletion</h3>
+            <p className="text-gray-400 text-sm">&quot;{deletionCostTarget.name}&quot; — require Bitcoin payment to delete. This is permanent.</p>
+            <div>
+              <label className="text-gray-400 text-xs">Cost (sats, min 1,500)</label>
+              <input type="number" value={deletionCostInput} onChange={e => setDeletionCostInput(e.target.value)} min={1500}
+                placeholder="e.g. 2000"
+                className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-orange-500" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setDeletionCostTarget(null); setDeletionCostInput(''); }} className="flex-1 py-2 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700">Cancel</button>
+              <button onClick={handleSetDeletionCost} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-500">Set</button>
+            </div>
           </div>
         </div>
       )}
