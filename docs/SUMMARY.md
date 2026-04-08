@@ -93,3 +93,48 @@ This entire project — design, architecture, code, documentation — was built 
 
 - **Repository:** [github.com/Evapotrack/bitcoin-vault](https://github.com/Evapotrack/bitcoin-vault)
 - **Author:** Andrew Brown
+
+---
+
+## Privacy & Security Summary
+
+*Last updated: April 8, 2026*
+
+### What the app protects
+
+- **Files at rest.** AES-256-GCM encryption with per-file keys derived via HKDF from your HD seed. Cracking one file's ciphertext does not expose others. On disk, files are opaque ciphertext with random IDs — an observer learns nothing about what you're protecting.
+- **Access control.** Unlock requires a confirmed on-chain Bitcoin payment — proof of work verification via the most secure settlement network ever built. Three mandatory checks enforced in the app's main process (not the UI): correct address, exact amount, at least one confirmation.
+- **Replay attacks.** Each transaction ID is logged. The same txid cannot unlock twice. Each address is used once and marked after unlock.
+- **Key material.** Private keys exist in memory only during signing operations, then are zeroed immediately. The seed is stored encrypted in macOS Keychain via Electron safeStorage. The renderer process never has access to key material — all cryptographic operations happen in the main process behind IPC.
+- **Temporary files.** Decrypted files are written to a secure directory (0600 permissions, inside app userData, not /tmp). On vault lock, all temp files are overwritten with random bytes and deleted. No plaintext remains on disk when locked.
+- **Clipboard.** Auto-clears 60 seconds after copying an address. Also cleared on vault lock.
+- **Password.** Hashed with scrypt (random 32-byte salt, timing-safe comparison). Not stored in plaintext.
+
+### What leaves the device
+
+- **Only mempool.space API queries.** Address lookups, UTXO fetches, fee estimates, and transaction broadcasts. No file names, vault structure, or non-Bitcoin data ever leaves the device.
+- **Fresh address per unlock.** No address reuse. An observer watching mempool.space cannot link unlock events to the same vault by address pattern.
+- **No analytics, telemetry, or crash reporting.** Zero. The app phones home only to mempool.space.
+
+### What the app does NOT protect against
+
+- **Physical access to an unlocked Mac.** If someone has your login password and the app is running, they may be able to access the vault or extract the seed from macOS Keychain. Lock your screen.
+- **This is a hot wallet.** Private keys exist on a general-purpose computer. It is designed for small amounts from unlock payments, not for storing significant Bitcoin. For significant holdings, use hardware cold storage.
+- **mempool.space is a trusted dependency.** If mempool.space is compromised and returns fabricated transaction data, the app cannot distinguish it from real data. Running your own node (deferred feature) eliminates this risk.
+- **SSD wear leveling.** Overwritten data may persist in unused flash cells. This is a hardware-level limitation no software can fully mitigate. Enable FileVault (full-disk encryption) for maximum protection.
+- **Physical coercion.** No software can defend against someone forcing you to unlock your vault.
+- **Webpack requires `unsafe-eval` in the CSP during development.** This allows dynamic code execution in the renderer. In production builds, this should be tightened. `unsafe-inline` is required for Tailwind's style injection. These are known trade-offs documented in the Electron ecosystem.
+
+### Electron hardening
+
+- `contextIsolation: true` — strict isolation between main and renderer processes
+- `nodeIntegration: false` — no direct Node.js access in renderer
+- Preload script exposes only safe IPC methods (no key operations)
+- External navigation blocked, new window creation blocked
+- Content Security Policy restricts connections to `self` + `mempool.space` only
+- Electron fuses: RunAsNode disabled, CookieEncryption enabled, NodeOptions disabled
+- Single instance lock prevents concurrent access to vault data
+
+### Single point of failure
+
+One 12-word seed controls both your Bitcoin wallet and all file encryption keys. If the seed is compromised, both are exposed. If the seed is lost, both are lost. This is an intentional design trade-off: one backup instead of two, at the cost of concentrated risk. The app communicates this clearly to the user.
