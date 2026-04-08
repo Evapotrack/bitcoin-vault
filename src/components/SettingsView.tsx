@@ -59,7 +59,18 @@ export function SettingsView() {
           <div className="space-y-2">
             <div className="flex justify-between items-center px-4 py-3 bg-gray-900 rounded-lg">
               <span className="text-gray-300 text-sm">Unlock Cost</span>
-              <span className="text-white font-mono text-sm">{vaultIndex?.settings.unlockCostSats.toLocaleString() ?? '—'} sats</span>
+              <select value={vaultIndex?.settings.unlockCostSats ?? 1500}
+                onChange={e => {
+                  const cost = parseInt(e.target.value);
+                  if (vaultIndex) { vaultIndex.settings.unlockCostSats = cost; }
+                  window.bitcoinVault.updateSettings({ unlockCostSats: cost });
+                }}
+                className="bg-gray-800 border-none text-white text-sm rounded px-2 py-1 font-mono focus:outline-none">
+                <option value={1500}>1,500 sats</option>
+                <option value={2000}>2,000 sats</option>
+                <option value={5000}>5,000 sats</option>
+                <option value={10000}>10,000 sats</option>
+              </select>
             </div>
             <div className="flex justify-between items-center px-4 py-3 bg-gray-900 rounded-lg">
               <span className="text-gray-300 text-sm">Unlock Frequency</span>

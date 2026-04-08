@@ -61,7 +61,7 @@ export interface BitcoinVaultAPI {
   }>;
 
   // Settings
-  updateSettings(updates: { autoLockMinutes?: number; denomination?: string }): Promise<void>;
+  updateSettings(updates: { autoLockMinutes?: number; denomination?: string; unlockCostSats?: number }): Promise<void>;
 
   // Util
   touchActivity(): Promise<void>;

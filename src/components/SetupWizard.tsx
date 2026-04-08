@@ -19,7 +19,7 @@ export function SetupWizard({ onComplete }: Props) {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [networkType, setNetworkType] = useState<'testnet' | 'mainnet'>('testnet');
-  const [unlockCost, setUnlockCost] = useState('750');
+  const [unlockCost, setUnlockCost] = useState('1500');
   const [frequency, setFrequency] = useState<UnlockFrequency>('per-session');
   const [vaultFolder, setVaultFolder] = useState('');
   const [autoLock, setAutoLock] = useState('15');
@@ -85,8 +85,8 @@ export function SetupWizard({ onComplete }: Props) {
       return;
     }
     const cost = parseInt(unlockCost);
-    if (isNaN(cost) || cost < 750) {
-      setConfigError('Unlock cost must be at least 750 sats.');
+    if (isNaN(cost) || cost < 1500) {
+      setConfigError('Unlock cost must be at least 1,500 sats.');
       return;
     }
 
@@ -126,8 +126,8 @@ export function SetupWizard({ onComplete }: Props) {
   return (
     <div className="flex flex-col h-screen bg-gray-950">
       <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
-      <div className="flex-1 flex items-center justify-center overflow-auto">
-      <div className="max-w-md w-96 px-8">
+      <div className="flex-1 overflow-auto flex justify-center items-center">
+      <div className="w-full max-w-sm px-8">
         {/* Welcome */}
         {step === 'welcome' && (
           <div className="space-y-8 text-center">
@@ -274,8 +274,8 @@ export function SetupWizard({ onComplete }: Props) {
             </div>
 
             <div>
-              <label className="text-gray-400 text-sm">Unlock Cost (sats, min 750)</label>
-              <input type="number" value={unlockCost} onChange={e => setUnlockCost(e.target.value)} min={750}
+              <label className="text-gray-400 text-sm">Unlock Cost (sats, min 1500)</label>
+              <input type="number" value={unlockCost} onChange={e => setUnlockCost(e.target.value)} min={1500}
                 className="w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-orange-500" />
             </div>
 

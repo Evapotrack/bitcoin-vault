@@ -443,13 +443,16 @@ ipcMain.handle('touch-activity', () => {
   }
 });
 
-ipcMain.handle('update-settings', (_e, updates: { autoLockMinutes?: number; denomination?: string }) => {
+ipcMain.handle('update-settings', (_e, updates: { autoLockMinutes?: number; denomination?: string; unlockCostSats?: number }) => {
   if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
   if (updates.autoLockMinutes !== undefined) {
     currentIndex.settings.autoLockMinutes = updates.autoLockMinutes;
   }
   if (updates.denomination !== undefined) {
     currentIndex.settings.denomination = updates.denomination as 'sats' | 'btc';
+  }
+  if (updates.unlockCostSats !== undefined && updates.unlockCostSats >= 1500) {
+    currentIndex.settings.unlockCostSats = updates.unlockCostSats;
   }
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
 });
@@ -459,7 +462,7 @@ ipcMain.handle('set-file-protection', (_e, fileId: string, costSats: number | nu
   if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
   const file = currentIndex.files.find(f => f.id === fileId);
   if (!file) return;
-  if (costSats !== null && costSats < 750) throw new Error('Minimum protection cost is 750 sats');
+  if (costSats !== null && costSats < 1500) throw new Error('Minimum protection cost is 1,500 sats');
   const validFreqs = ['per-session', 'daily', 'weekly', 'monthly'];
   if (frequency !== null && !validFreqs.includes(frequency)) throw new Error('Invalid frequency');
   file.protectionCostSats = costSats ?? undefined;
@@ -472,7 +475,7 @@ ipcMain.handle('set-folder-protection', (_e, folderId: string, costSats: number 
   if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
   const folder = currentIndex.folders.find(f => f.id === folderId);
   if (!folder) return;
-  if (costSats !== null && costSats < 750) throw new Error('Minimum protection cost is 750 sats');
+  if (costSats !== null && costSats < 1500) throw new Error('Minimum protection cost is 1,500 sats');
   const validFreqs = ['per-session', 'daily', 'weekly', 'monthly'];
   if (frequency !== null && !validFreqs.includes(frequency)) throw new Error('Invalid frequency');
   folder.protectionCostSats = costSats ?? undefined;

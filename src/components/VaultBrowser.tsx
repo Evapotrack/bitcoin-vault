@@ -220,7 +220,7 @@ export function VaultBrowser() {
             <h3 className="text-white font-semibold text-lg">Set Protection</h3>
             <p className="text-gray-400 text-sm">&quot;{protectTarget.name}&quot; — additional payment required to access.</p>
             <div>
-              <label className="text-gray-400 text-xs">Cost (sats, min 750)</label>
+              <label className="text-gray-400 text-xs">Cost (sats, min 1,500)</label>
               <input type="number" value={protectCost} onChange={e => setProtectCost(e.target.value)} min={750}
                 placeholder="e.g. 2000"
                 className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-orange-500" />
