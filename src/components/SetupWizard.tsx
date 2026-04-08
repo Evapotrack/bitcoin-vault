@@ -126,8 +126,8 @@ export function SetupWizard({ onComplete }: Props) {
   return (
     <div className="flex flex-col h-screen bg-gray-950">
       <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
-      <div className="flex-1 overflow-auto flex justify-center items-center">
-      <div className="w-full max-w-sm px-8">
+      <div className="flex-1 overflow-auto grid place-items-center">
+      <div style={{ width: '100%', maxWidth: '384px', padding: '0 2rem' }}>
         {/* Welcome */}
         {step === 'welcome' && (
           <div className="space-y-8 text-center">
