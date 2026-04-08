@@ -5,6 +5,16 @@ import { HelpLink } from './HelpLink';
 export function SettingsView() {
   const { vaultIndex, networkType, denomination, setDenomination, autoLockMinutes, setAutoLockMinutes } = useVaultStore();
 
+  const handleAutoLock = (minutes: number) => {
+    setAutoLockMinutes(minutes);
+    window.bitcoinVault.updateSettings({ autoLockMinutes: minutes });
+  };
+
+  const handleDenomination = (denom: 'sats' | 'btc') => {
+    setDenomination(denom);
+    window.bitcoinVault.updateSettings({ denomination: denom });
+  };
+
   return (
     <div className="p-6 max-w-lg">
       <div className="flex items-center gap-3 mb-6">
@@ -45,13 +55,13 @@ export function SettingsView() {
             <span className="text-gray-300 text-sm">Denomination</span>
             <div className="flex bg-gray-800 rounded-lg overflow-hidden">
               <button
-                onClick={() => setDenomination('sats')}
+                onClick={() => handleDenomination('sats')}
                 className={`px-3 py-1 text-sm ${denomination === 'sats' ? 'bg-orange-600 text-white' : 'text-gray-400'}`}
               >
                 sats
               </button>
               <button
-                onClick={() => setDenomination('btc')}
+                onClick={() => handleDenomination('btc')}
                 className={`px-3 py-1 text-sm ${denomination === 'btc' ? 'bg-orange-600 text-white' : 'text-gray-400'}`}
               >
                 BTC
@@ -67,7 +77,7 @@ export function SettingsView() {
             <span className="text-gray-300 text-sm">Auto-Lock Timer</span>
             <select
               value={autoLockMinutes}
-              onChange={e => setAutoLockMinutes(parseInt(e.target.value))}
+              onChange={e => handleAutoLock(parseInt(e.target.value))}
               className="bg-gray-800 border-none text-white text-sm rounded px-2 py-1 focus:outline-none"
             >
               <option value={5}>5 min</option>

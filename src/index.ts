@@ -421,3 +421,14 @@ ipcMain.handle('touch-activity', () => {
     resetAutoLock(currentIndex.settings.autoLockMinutes);
   }
 });
+
+ipcMain.handle('update-settings', (_e, updates: { autoLockMinutes?: number; denomination?: string }) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  if (updates.autoLockMinutes !== undefined) {
+    currentIndex.settings.autoLockMinutes = updates.autoLockMinutes;
+  }
+  if (updates.denomination !== undefined) {
+    currentIndex.settings.denomination = updates.denomination as 'sats' | 'btc';
+  }
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+});

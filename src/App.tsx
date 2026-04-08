@@ -11,8 +11,6 @@ import { HowTo } from './components/HowTo';
 export function App() {
   const { view, setView, isSetupComplete, setSetupComplete, isUnlocked, lockVault } = useVaultStore();
   const [loading, setLoading] = useState(true);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     // Check if setup is complete
@@ -47,29 +45,7 @@ export function App() {
   }
 
   if (view === 'lock' || !isUnlocked) {
-    return (
-      <LockScreen
-        passwordInput={passwordInput}
-        setPasswordInput={setPasswordInput}
-        passwordError={passwordError}
-        onUnlock={async () => {
-          const valid = await window.bitcoinVault.verifyPassword(passwordInput);
-          if (!valid) {
-            setPasswordError('Incorrect password');
-            return;
-          }
-          setPasswordError('');
-          setPasswordInput('');
-          try {
-            await window.bitcoinVault.loadVault();
-            useVaultStore.getState().setUnlocked(true);
-            setView('vault');
-          } catch {
-            setView('lock');
-          }
-        }}
-      />
-    );
+    return <LockScreen />;
   }
 
   // Unlocked views
@@ -83,8 +59,10 @@ export function App() {
     }
   };
 
+  const handleActivity = () => { window.bitcoinVault.touchActivity(); };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
+    <div className="flex flex-col h-screen bg-gray-950" onClick={handleActivity} onKeyDown={handleActivity}>
       <div className="h-8 shrink-0 bg-gray-900" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
       <div className="flex flex-1 min-h-0">
         <Sidebar />

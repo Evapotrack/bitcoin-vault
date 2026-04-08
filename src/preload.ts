@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('bitcoinVault', {
   broadcastTransaction: (toAddress: string, amountSats: number, feeRate: number) =>
     ipcRenderer.invoke('broadcast-transaction', toAddress, amountSats, feeRate),
 
+  // Settings
+  updateSettings: (updates: { autoLockMinutes?: number; denomination?: string }) =>
+    ipcRenderer.invoke('update-settings', updates),
+
   // Util
   touchActivity: () => ipcRenderer.invoke('touch-activity'),
   getNetworkType: () => ipcRenderer.invoke('get-network-type'),

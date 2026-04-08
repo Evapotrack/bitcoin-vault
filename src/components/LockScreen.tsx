@@ -2,29 +2,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useVaultStore } from '../store/vaultStore';
 
-interface Props {
-  passwordInput: string;
-  setPasswordInput: (v: string) => void;
-  passwordError: string;
-  onUnlock: () => void;
-}
-
-export function LockScreen({ passwordInput, setPasswordInput, passwordError, onUnlock }: Props) {
-  const { paymentStatus, setPaymentStatus, setPaymentError, paymentError } = useVaultStore();
+export function LockScreen() {
+  const { paymentStatus, setPaymentStatus, setPaymentError, paymentError, setUnlocked, setView } = useVaultStore();
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [unlockAddress, setUnlockAddress] = useState('');
   const [unlockAmount, setUnlockAmount] = useState(0);
-  const [showPayment, setShowPayment] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handlePasswordSubmit = async () => {
     const valid = await window.bitcoinVault.verifyPassword(passwordInput);
     if (!valid) {
-      useVaultStore.getState().setPaymentError('Incorrect password');
+      setPasswordError('Incorrect password');
       return;
     }
+    setPasswordError('');
     setAuthenticated(true);
-    useVaultStore.getState().setPaymentError(null);
 
     // Load vault to get config and start payment flow
     try {
@@ -33,13 +27,12 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
 
       const { address } = await window.bitcoinVault.getUnlockAddress();
       setUnlockAddress(address);
-      setShowPayment(true);
       setPaymentStatus('waiting');
 
       // Start polling
       startPolling(address, index.settings.unlockCostSats);
     } catch (err) {
-      useVaultStore.getState().setPaymentError('Failed to load vault');
+      setPaymentError('Failed to load vault');
     }
   };
 
@@ -54,8 +47,8 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
           setPaymentStatus('confirmed');
           // Brief delay then unlock
           setTimeout(() => {
-            useVaultStore.getState().setUnlocked(true);
-            useVaultStore.getState().setView('vault');
+            setUnlocked(true);
+            setView('vault');
           }, 1500);
         } else if (result.detected) {
           setPaymentStatus('detected');

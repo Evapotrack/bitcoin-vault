@@ -36,7 +36,11 @@ export interface BitcoinVaultAPI {
   buildTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<TransactionDetail>;
   broadcastTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<string>;
 
+  // Settings
+  updateSettings(updates: { autoLockMinutes?: number; denomination?: string }): Promise<void>;
+
   // Util
+  touchActivity(): Promise<void>;
   getNetworkType(): Promise<NetworkType>;
   selectFolder(): Promise<string | null>;
   copyToClipboard(text: string): Promise<void>;
