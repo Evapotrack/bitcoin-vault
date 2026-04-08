@@ -84,11 +84,14 @@ export function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-950">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        {renderContent()}
-      </main>
+    <div className="flex flex-col h-screen bg-gray-950">
+      <div className="h-8 shrink-0 bg-gray-900" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+      <div className="flex flex-1 min-h-0">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 }

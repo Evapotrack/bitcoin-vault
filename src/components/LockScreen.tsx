@@ -86,8 +86,10 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
   // Password entry
   if (!authenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950">
-        <div className="w-full max-w-sm p-8 space-y-6">
+      <div className="flex flex-col h-screen bg-gray-950">
+        <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+        <div className="flex-1 flex items-center justify-center">
+        <div className="w-full max-w-sm px-8 space-y-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-1">Bitcoin Vault</h1>
             <p className="text-gray-500 text-sm">Enter your password to continue</p>
@@ -111,14 +113,17 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
             Unlock
           </button>
         </div>
+        </div>
       </div>
     );
   }
 
   // Payment screen
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-950">
-      <div className="w-full max-w-sm p-8 space-y-6 text-center">
+    <div className="flex flex-col h-screen bg-gray-950">
+      <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+      <div className="flex-1 flex items-center justify-center">
+      <div className="w-full max-w-sm px-8 space-y-6 text-center">
         {/* QR Code */}
         <div className="flex justify-center">
           <div className="bg-white p-4 rounded-xl">
@@ -155,6 +160,7 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
             <span className="text-orange-400">{paymentError}</span>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

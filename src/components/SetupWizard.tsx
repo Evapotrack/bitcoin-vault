@@ -124,8 +124,10 @@ export function SetupWizard({ onComplete }: Props) {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-950">
-      <div className="w-full max-w-lg p-8">
+    <div className="flex flex-col h-screen bg-gray-950">
+      <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+      <div className="flex-1 flex items-center justify-center overflow-auto">
+      <div className="w-full max-w-md px-8 py-4">
         {/* Welcome */}
         {step === 'welcome' && (
           <div className="space-y-8">
@@ -346,6 +348,7 @@ export function SetupWizard({ onComplete }: Props) {
             </button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

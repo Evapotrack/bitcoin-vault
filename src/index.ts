@@ -64,11 +64,12 @@ let mainWindow: BrowserWindow | null = null;
 
 const createWindow = (): void => {
   mainWindow = new BrowserWindow({
-    height: 800,
-    width: 1200,
-    minWidth: 900,
-    minHeight: 600,
+    height: 700,
+    width: 960,
+    minWidth: 760,
+    minHeight: 500,
     titleBarStyle: 'hiddenInset',
+    center: true,
     backgroundColor: '#030712',
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
