@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useVaultStore } from '../store/vaultStore';
 
 export function LockScreen() {
-  const { paymentStatus, setPaymentStatus, setPaymentError, paymentError, setUnlocked, setView } = useVaultStore();
+  const { paymentStatus, setPaymentStatus, setPaymentError, paymentError, setUnlocked, setView, setVaultIndex, setBalance, setNetworkType, setAutoLockMinutes, setDenomination } = useVaultStore();
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [unlockAddress, setUnlockAddress] = useState('');
@@ -23,6 +23,10 @@ export function LockScreen() {
     // Load vault to get config
     try {
       const index = await window.bitcoinVault.loadVault();
+      setVaultIndex(index);
+      setNetworkType(index.settings.networkType);
+      setAutoLockMinutes(index.settings.autoLockMinutes);
+      setDenomination(index.settings.denomination);
 
       // Check dead man's switch — if expired, skip payment entirely
       const dmsBypassed = await window.bitcoinVault.checkDeadManBypass();

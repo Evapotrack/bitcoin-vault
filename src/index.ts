@@ -235,21 +235,27 @@ ipcMain.handle('import-files', (_e, files: Array<{ path: string; name: string; s
     if (sizeCheck === 'reject') throw new Error(`File too large: ${file.name}`);
 
     const fileId = vaultFiles.generateFileId();
-    const { originalSize, compressedSize } = vaultFiles.importFile(
-      file.path, fileId, currentVaultPath, currentMasterKey
-    );
+    try {
+      const { originalSize, compressedSize } = vaultFiles.importFile(
+        file.path, fileId, currentVaultPath, currentMasterKey
+      );
 
-    currentIndex.files.push({
-      id: fileId,
-      name: file.name,
-      folderId: null,
-      originalSize,
-      compressedSize,
-      addedAt: Date.now(),
-    });
+      currentIndex.files.push({
+        id: fileId,
+        name: file.name,
+        folderId: null,
+        originalSize,
+        compressedSize,
+        addedAt: Date.now(),
+      });
 
-    if (file.deleteOriginal) {
-      vaultFiles.deleteOriginalSecurely(file.path);
+      if (file.deleteOriginal) {
+        vaultFiles.deleteOriginalSecurely(file.path);
+      }
+    } catch (err) {
+      // Save index with whatever files succeeded before this one
+      vaultIndex.saveIndex(currentIndex, currentVaultPath!, currentMasterKey!);
+      throw new Error(`Failed to import "${file.name}": ${err instanceof Error ? err.message : 'unknown error'}`);
     }
   }
 
@@ -261,7 +267,22 @@ ipcMain.handle('open-file', (_e, fileId: string) => {
   if (!currentVaultPath || !currentMasterKey || !currentIndex) throw new Error('Vault not open');
   const file = currentIndex.files.find(f => f.id === fileId);
   if (!file) throw new Error('File not found');
+
+  // Check per-file protection — return protection info if payment required
+  if (file.protectionCostSats && file.protectionCostSats > 0) {
+    return { protected: true, costSats: file.protectionCostSats, frequency: file.protectionFrequency };
+  }
+
+  // Check parent folder protection
+  if (file.folderId) {
+    const folder = currentIndex.folders.find(f => f.id === file.folderId);
+    if (folder?.protectionCostSats && folder.protectionCostSats > 0) {
+      return { protected: true, costSats: folder.protectionCostSats, frequency: folder.protectionFrequency };
+    }
+  }
+
   vaultFiles.accessFile(fileId, file.name, currentVaultPath, currentMasterKey);
+  return { protected: false };
 });
 
 ipcMain.handle('delete-file', (_e, fileId: string) => {

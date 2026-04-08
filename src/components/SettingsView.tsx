@@ -118,7 +118,13 @@ export function SettingsView() {
               <>
                 <div className="flex justify-between items-center px-4 py-3 bg-gray-900 rounded-lg">
                   <span className="text-gray-300 text-sm">Countdown</span>
-                  <select value={dmsDays} onChange={e => setDmsDays(e.target.value)}
+                  <select value={dmsDays} onChange={async e => {
+                    setDmsDays(e.target.value);
+                    if (dmsEnabled) {
+                      await window.bitcoinVault.configureDeadManSwitch({ enabled: true, countdownDays: parseInt(e.target.value) || 90, proofOfLifeCostSats: parseInt(dmsCost) || 750 });
+                      setDmsStatus(await window.bitcoinVault.getDeadManSwitchStatus());
+                    }
+                  }}
                     className="bg-gray-800 border-none text-white text-sm rounded px-2 py-1 focus:outline-none">
                     <option value="30">30 days</option><option value="60">60 days</option>
                     <option value="90">90 days</option><option value="180">180 days</option>
