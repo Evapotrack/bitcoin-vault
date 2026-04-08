@@ -59,6 +59,8 @@ export function LockScreen() {
 
     const poll = async () => {
       try {
+        // Keep auto-lock timer alive while waiting for confirmation
+        window.bitcoinVault.touchActivity();
         const result = await window.bitcoinVault.pollPayment(address, amount);
         if (result.confirmed) {
           if (pollRef.current) clearInterval(pollRef.current);

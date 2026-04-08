@@ -71,7 +71,7 @@ export async function checkPayment(
   for (const tx of txs) {
     for (const output of tx.vout) {
       if (output.scriptpubkey_address === address) {
-        if (output.value === expectedAmount) {
+        if (output.value >= expectedAmount) {
           return {
             found: true,
             confirmed: tx.status.confirmed,
