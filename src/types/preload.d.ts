@@ -22,7 +22,7 @@ export interface BitcoinVaultAPI {
   // Files
   stageFiles(): Promise<StagedFile[]>;
   importFiles(files: StagedFile[]): Promise<VaultIndex>;
-  openFile(fileId: string): Promise<void>;
+  openFile(fileId: string): Promise<{ protected: boolean; costSats?: number; frequency?: string } | void>;
   deleteFile(fileId: string): Promise<VaultIndex>;
   createFolder(name: string, parentId: string | null): Promise<string>;
   deleteFolder(folderId: string): Promise<VaultIndex>;
