@@ -36,12 +36,19 @@ export function LockScreen() {
         return;
       }
 
+      // Ensure minimum unlock cost is 1500 (real wallets can't send less)
+      let cost = index.settings.unlockCostSats;
+      if (cost < 1500) {
+        cost = 1500;
+        await window.bitcoinVault.updateSettings({ unlockCostSats: 1500 });
+      }
+
       // Normal payment flow
-      setUnlockAmount(index.settings.unlockCostSats);
+      setUnlockAmount(cost);
       const { address } = await window.bitcoinVault.getUnlockAddress();
       setUnlockAddress(address);
       setPaymentStatus('waiting');
-      startPolling(address, index.settings.unlockCostSats);
+      startPolling(address, cost);
     } catch (err) {
       setPaymentError('Failed to load vault');
     }
