@@ -155,7 +155,7 @@ export function SetupWizard({ onComplete }: Props) {
           <div className="space-y-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-white mb-2">Your Seed Phrase</h2>
-              <p className="text-red-400 text-sm font-semibold">
+              <p className="text-orange-400 text-sm font-semibold">
                 Write these words down on paper. This is the only time they will be shown.
               </p>
             </div>
@@ -201,7 +201,7 @@ export function SetupWizard({ onComplete }: Props) {
                 </div>
               ))}
             </div>
-            {verifyError && <p className="text-red-400 text-sm">{verifyError}</p>}
+            {verifyError && <p className="text-orange-400 text-sm">{verifyError}</p>}
             <button
               onClick={handleVerify}
               className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-semibold transition-colors"
@@ -236,7 +236,7 @@ export function SetupWizard({ onComplete }: Props) {
                 </div>
               ))}
             </div>
-            {restoreError && <p className="text-red-400 text-sm">{restoreError}</p>}
+            {restoreError && <p className="text-orange-400 text-sm">{restoreError}</p>}
             <button
               onClick={handleRestoreVerify}
               className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-semibold transition-colors"
@@ -312,7 +312,7 @@ export function SetupWizard({ onComplete }: Props) {
               </div>
             </div>
 
-            {configError && <p className="text-red-400 text-sm">{configError}</p>}
+            {configError && <p className="text-orange-400 text-sm">{configError}</p>}
 
             <button onClick={handleConfig}
               className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-semibold transition-colors">

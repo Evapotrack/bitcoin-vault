@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, clipboard } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as keychain from './keychain';
 import * as wallet from './bitcoin/wallet';
@@ -48,6 +49,15 @@ function resetAutoLock(minutes: number): void {
       w.webContents.send('vault-locked');
     });
   }, minutes * 60 * 1000);
+}
+
+function getDerivedAddresses(): Array<{ address: string; index: number }> {
+  if (!currentSeed || !currentIndex) return [];
+  const result: Array<{ address: string; index: number }> = [];
+  for (let i = 0; i < currentIndex.addressIndex; i++) {
+    result.push({ address: wallet.deriveAddress(currentSeed, i, currentNetworkType).address, index: i });
+  }
+  return result;
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -211,7 +221,7 @@ ipcMain.handle('stage-files', async () => {
   return result.filePaths.map(p => ({
     path: p,
     name: path.basename(p),
-    size: require('fs').statSync(p).size,
+    size: fs.statSync(p).size,
     deleteOriginal: false,
   }));
 });
@@ -328,19 +338,13 @@ ipcMain.handle('poll-payment', async (_e, address: string, amountSats: number) =
 
 ipcMain.handle('get-balance', async () => {
   if (!currentSeed || !currentIndex) return 0;
-  const addresses: string[] = [];
-  for (let i = 0; i < currentIndex.addressIndex; i++) {
-    addresses.push(wallet.deriveAddress(currentSeed, i, currentNetworkType).address);
-  }
+  const addresses = getDerivedAddresses();
   return utxoModule.fetchBalance(addresses, currentNetworkType);
 });
 
 ipcMain.handle('get-utxos', async () => {
   if (!currentSeed || !currentIndex) return [];
-  const addresses: string[] = [];
-  for (let i = 0; i < currentIndex.addressIndex; i++) {
-    addresses.push(wallet.deriveAddress(currentSeed, i, currentNetworkType).address);
-  }
+  const addresses = getDerivedAddresses();
   return utxoModule.fetchAllUtxos(addresses, currentNetworkType);
 });
 
@@ -355,10 +359,7 @@ ipcMain.handle('build-transaction', async (_e, toAddress: string, amountSats: nu
     throw new Error('Invalid address');
   }
 
-  const addresses: string[] = [];
-  for (let i = 0; i < currentIndex.addressIndex; i++) {
-    addresses.push(wallet.deriveAddress(currentSeed, i, currentNetworkType).address);
-  }
+  const addresses = getDerivedAddresses();
   const utxos = await utxoModule.fetchAllUtxos(addresses, currentNetworkType);
 
   const changeAddr = wallet.deriveChangeAddress(currentSeed, 0, currentNetworkType).address;
@@ -370,10 +371,7 @@ ipcMain.handle('build-transaction', async (_e, toAddress: string, amountSats: nu
 ipcMain.handle('broadcast-transaction', async (_e, toAddress: string, amountSats: number, feeRate: number) => {
   if (!currentSeed || !currentIndex) throw new Error('Vault not ready');
 
-  const addresses: string[] = [];
-  for (let i = 0; i < currentIndex.addressIndex; i++) {
-    addresses.push(wallet.deriveAddress(currentSeed, i, currentNetworkType).address);
-  }
+  const addresses = getDerivedAddresses();
   const utxos = await utxoModule.fetchAllUtxos(addresses, currentNetworkType);
   const changeAddr = wallet.deriveChangeAddress(currentSeed, 0, currentNetworkType).address;
 
@@ -413,6 +411,7 @@ ipcMain.handle('clear-clipboard', () => {
 });
 
 ipcMain.handle('lock-vault', () => {
+  clipboard.clear();
   clearSensitiveState();
 });
 

@@ -6,11 +6,19 @@ function getBaseUrl(networkType: NetworkType): string {
     : 'https://mempool.space/api';
 }
 
-export async function fetchUtxos(address: string, networkType: NetworkType): Promise<UTXO[]> {
+async function fetchBlockHeight(networkType: NetworkType): Promise<number> {
+  const url = `${getBaseUrl(networkType)}/blocks/tip/height`;
+  const res = await fetch(url);
+  if (!res.ok) return 0;
+  return parseInt(await res.text(), 10);
+}
+
+export async function fetchUtxos(address: string, derivationIndex: number, networkType: NetworkType): Promise<UTXO[]> {
   const url = `${getBaseUrl(networkType)}/address/${address}/utxo`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch UTXOs: ${res.status}`);
 
+  const currentHeight = await fetchBlockHeight(networkType);
   const data: Array<{ txid: string; vout: number; value: number; status: { confirmed: boolean; block_height?: number } }> = await res.json();
 
   return data.map(u => ({
@@ -18,14 +26,17 @@ export async function fetchUtxos(address: string, networkType: NetworkType): Pro
     vout: u.vout,
     value: u.value,
     address,
-    confirmations: u.status.confirmed ? 1 : 0,
+    derivationIndex,
+    confirmations: u.status.confirmed && u.status.block_height
+      ? currentHeight - u.status.block_height + 1
+      : 0,
   }));
 }
 
-export async function fetchBalance(addresses: string[], networkType: NetworkType): Promise<number> {
+export async function fetchBalance(addresses: Array<{ address: string; index: number }>, networkType: NetworkType): Promise<number> {
   let total = 0;
-  for (const addr of addresses) {
-    const utxos = await fetchUtxos(addr, networkType);
+  for (const { address, index } of addresses) {
+    const utxos = await fetchUtxos(address, index, networkType);
     for (const u of utxos) {
       total += u.value;
     }
@@ -33,10 +44,10 @@ export async function fetchBalance(addresses: string[], networkType: NetworkType
   return total;
 }
 
-export async function fetchAllUtxos(addresses: string[], networkType: NetworkType): Promise<UTXO[]> {
+export async function fetchAllUtxos(addresses: Array<{ address: string; index: number }>, networkType: NetworkType): Promise<UTXO[]> {
   const all: UTXO[] = [];
-  for (const addr of addresses) {
-    const utxos = await fetchUtxos(addr, networkType);
+  for (const { address, index } of addresses) {
+    const utxos = await fetchUtxos(address, index, networkType);
     all.push(...utxos);
   }
   return all;

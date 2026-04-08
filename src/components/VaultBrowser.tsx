@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useVaultStore } from '../store/vaultStore';
+import { HelpLink } from './HelpLink';
 
 export function VaultBrowser() {
   const { vaultIndex, setVaultIndex, currentFolderId, setCurrentFolder, currentFiles, currentFolders } = useVaultStore();
@@ -86,6 +87,7 @@ export function VaultBrowser() {
             </button>
           )}
           <h2 className="text-lg font-semibold text-white">{breadcrumb()}</h2>
+          <HelpLink />
         </div>
         <div className="flex gap-2">
           <button
@@ -137,12 +139,12 @@ export function VaultBrowser() {
               onClick={() => setCurrentFolder(folder.id)}
             >
               <div className="flex items-center gap-3">
-                <span className="text-yellow-500 text-lg">&#128193;</span>
+                <span className="text-orange-400 text-lg">&#128193;</span>
                 <span className="text-white text-sm">{folder.name}</span>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setDeleteTarget({ type: 'folder', id: folder.id, name: folder.name }); }}
-                className="text-gray-600 hover:text-red-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-gray-600 hover:text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 Delete
               </button>
@@ -167,7 +169,7 @@ export function VaultBrowser() {
                 </span>
                 <button
                   onClick={e => { e.stopPropagation(); setDeleteTarget({ type: 'file', id: file.id, name: file.name }); }}
-                  className="text-gray-600 hover:text-red-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-gray-600 hover:text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   Delete
                 </button>
@@ -192,7 +194,7 @@ export function VaultBrowser() {
                 Cancel
               </button>
               <button onClick={handleDelete}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors hover:bg-red-500">
+                className="flex-1 py-2 bg-gray-700 text-white rounded-lg text-sm font-semibold transition-colors hover:bg-gray-600">
                 Delete
               </button>
             </div>

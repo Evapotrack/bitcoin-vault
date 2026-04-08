@@ -45,6 +45,7 @@ export interface UTXO {
   value: number;
   address: string;
   confirmations: number;
+  derivationIndex: number;
   label?: string;
 }
 

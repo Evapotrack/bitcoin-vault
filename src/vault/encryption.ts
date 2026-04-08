@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import * as zlib from 'zlib';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -59,16 +60,15 @@ export function decryptIndex(ciphertext: Buffer, masterKey: Buffer): string {
 // Secure file deletion: overwrite with random bytes then unlink
 export function secureDelete(filePath: string): void {
   try {
-    const stat = require('fs').statSync(filePath);
+    const stat = fs.statSync(filePath);
     const randomData = crypto.randomBytes(stat.size);
-    require('fs').writeFileSync(filePath, randomData);
-    require('fs').unlinkSync(filePath);
+    fs.writeFileSync(filePath, randomData);
+    fs.unlinkSync(filePath);
   } catch {
-    // File may already be deleted
     try {
-      require('fs').unlinkSync(filePath);
+      fs.unlinkSync(filePath);
     } catch {
-      // Ignore
+      // File already deleted
     }
   }
 }

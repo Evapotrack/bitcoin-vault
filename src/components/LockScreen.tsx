@@ -102,7 +102,7 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
             autoFocus
           />
           {(passwordError || paymentError) && (
-            <p className="text-red-400 text-sm">{passwordError || paymentError}</p>
+            <p className="text-orange-400 text-sm">{passwordError || paymentError}</p>
           )}
           <button
             onClick={handlePasswordSubmit}
@@ -149,10 +149,10 @@ export function LockScreen({ passwordInput, setPasswordInput, passwordError, onU
             <span className="text-orange-400">Transaction detected. Waiting for confirmation...</span>
           )}
           {paymentStatus === 'confirmed' && (
-            <span className="text-green-400">Payment confirmed. Unlocking vault...</span>
+            <span className="text-white">Payment confirmed. Unlocking vault...</span>
           )}
           {paymentStatus === 'error' && (
-            <span className="text-red-400">{paymentError}</span>
+            <span className="text-orange-400">{paymentError}</span>
           )}
         </div>
       </div>

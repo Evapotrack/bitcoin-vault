@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useVaultStore } from '../store/vaultStore';
+import { HelpLink } from './HelpLink';
 import type { UTXO, TransactionDetail } from '../types/vault';
 
 export function WalletView() {
@@ -71,7 +72,10 @@ export function WalletView() {
 
   return (
     <div className="p-6 max-w-2xl">
-      <h2 className="text-lg font-semibold text-white mb-6">Wallet</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <h2 className="text-lg font-semibold text-white">Wallet</h2>
+        <HelpLink />
+      </div>
 
       {/* Balance */}
       <div className="bg-gray-900 rounded-xl p-6 mb-6">
@@ -141,9 +145,9 @@ export function WalletView() {
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-orange-400 text-sm">{error}</p>}
         {txResult && (
-          <p className="text-green-400 text-sm font-mono break-all">
+          <p className="text-white text-sm font-mono break-all">
             Broadcast: {txResult}
           </p>
         )}

@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('bitcoinVault', {
     ipcRenderer.invoke('broadcast-transaction', toAddress, amountSats, feeRate),
 
   // Util
+  touchActivity: () => ipcRenderer.invoke('touch-activity'),
   getNetworkType: () => ipcRenderer.invoke('get-network-type'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   copyToClipboard: (text: string) => ipcRenderer.invoke('copy-to-clipboard', text),

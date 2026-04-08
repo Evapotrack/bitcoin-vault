@@ -32,7 +32,7 @@ export function Sidebar() {
     <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col p-4 pt-10">
       {/* Testnet badge */}
       {networkType === 'testnet' && (
-        <div className="mb-4 px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs font-semibold rounded text-center">
+        <div className="mb-4 px-2 py-1 bg-orange-600/20 text-orange-400 text-xs font-semibold rounded text-center">
           TESTNET
         </div>
       )}
@@ -57,7 +57,7 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="space-y-3 pt-4 border-t border-gray-800">
         {/* Hot wallet warning */}
-        <div className="text-xs text-yellow-500/70 text-center">
+        <div className="text-xs text-gray-500 text-center">
           Hot wallet — small amounts only
         </div>
 

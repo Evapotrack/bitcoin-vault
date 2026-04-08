@@ -122,11 +122,10 @@ export async function signAndBroadcast(
     });
   }
 
-  // Sign each input — derive key, sign, zero key
+  // Sign each input — derive key from UTXO's tracked derivation index, sign, zero key
   for (let i = 0; i < detail.inputs.length; i++) {
-    // For simplicity, derive from address index 0..addressIndex and find match
-    // In production, we'd track which derivation index each UTXO came from
-    const keyPair = deriveKeyPair(seed, `m/84'/${coinType}'/0'/0/${i}`, networkType);
+    const utxo = utxos.find(u => u.txid === detail.inputs[i].txid && u.vout === detail.inputs[i].vout)!;
+    const keyPair = deriveKeyPair(seed, `m/84'/${coinType}'/0'/0/${utxo.derivationIndex}`, networkType);
     try {
       psbt.signInput(i, {
         publicKey: keyPair.publicKey,
