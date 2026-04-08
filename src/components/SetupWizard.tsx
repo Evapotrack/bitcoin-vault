@@ -126,12 +126,12 @@ export function SetupWizard({ onComplete }: Props) {
   return (
     <div className="flex flex-col h-screen bg-gray-950">
       <div className="h-8 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
-      <div className="flex-1 flex items-center justify-center overflow-auto">
-      <div className="w-full max-w-md px-8 py-4">
+      <div className="flex-1 flex items-center justify-center overflow-auto px-8">
+      <div className="w-full max-w-md">
         {/* Welcome */}
         {step === 'welcome' && (
-          <div className="space-y-8">
-            <div className="text-center">
+          <div className="space-y-8 text-center">
+            <div>
               <h1 className="text-3xl font-bold text-white mb-2">Bitcoin Vault</h1>
               <p className="text-gray-400">Encrypt your files locally. Unlock them with Bitcoin.</p>
             </div>
