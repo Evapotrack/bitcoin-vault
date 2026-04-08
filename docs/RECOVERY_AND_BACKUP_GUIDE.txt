@@ -1,0 +1,334 @@
+================================================================================
+BITCOIN VAULT — RECOVERY AND BACKUP GUIDE
+A non-technical, step-by-step guide for restoring your vault
+Creator: Andrew Brown
+Date: April 6, 2026
+================================================================================
+
+WHO THIS DOCUMENT IS FOR
+
+This document is written for someone who needs to restore a Bitcoin Vault from
+a backup. That person might be you on a new computer, or it might be someone
+you've trusted with your seed phrase — a family member, an executor, or an
+inheritor. It assumes no prior experience with Bitcoin or encryption software.
+
+Keep this document with your seed backup or give a copy to the person who
+would need it.
+
+
+================================================================================
+WHAT YOU NEED TO RESTORE YOUR VAULT
+================================================================================
+
+You need exactly two things:
+
+    1. YOUR 12-WORD SEED PHRASE
+       Twelve English words in a specific order. This is the master key to
+       everything — your Bitcoin and your encrypted files. It was written
+       down on paper or stamped into metal during the initial setup of the
+       vault. It looks something like:
+
+           1. abandon   2. ability   3. able     4. about
+           5. above     6. absent    7. absorb   8. abstract
+           9. absurd   10. abuse    11. access   12. accident
+
+       (These are example words, not a real seed. Your words will be different.)
+
+       The ORDER matters. Word 1 must be word 1. If you swap any two words,
+       the restore will fail.
+
+    2. YOUR ENCRYPTED VAULT FOLDER
+       A folder on a backup drive, iCloud, or Time Machine that contains
+       your encrypted files. The default folder name is "BitcoinVault" and
+       it was originally located in the Documents folder on the Mac where
+       the vault was set up. Inside, you will see files with random-looking
+       names ending in .enc — these are your encrypted files. They are
+       unreadable without the seed phrase.
+
+       If you have access to an iCloud account, a Time Machine backup, or
+       an external drive that was used for backups, look for this folder.
+
+
+WHAT HAPPENS WITH EACH PIECE ALONE:
+
+    Seed phrase + encrypted folder = FULL RECOVERY (files + Bitcoin)
+    Seed phrase alone             = BITCOIN ONLY (wallet balance recoverable,
+                                    but files cannot be decrypted without
+                                    the encrypted folder)
+    Encrypted folder alone        = NOTHING (files are encrypted and cannot
+                                    be read without the seed phrase)
+
+If you have only the seed phrase, you can still recover any Bitcoin that was
+in the vault's wallet. But the files are gone without the encrypted folder.
+
+If you have only the encrypted folder, the files are permanently locked.
+There is no backdoor. There is no support team. There is no reset.
+
+
+================================================================================
+STEP-BY-STEP RECOVERY
+================================================================================
+
+STEP 1: GET A MAC
+
+The Bitcoin Vault app runs on macOS. You need a Mac — any recent Mac running
+macOS Sequoia or later should work. If the original Mac was lost or destroyed,
+any replacement Mac will do.
+
+
+STEP 2: INSTALL THE APP
+
+Download the Bitcoin Vault app from:
+
+    github.com/Evapotrack/bitcoin-vault
+
+Look for the "Releases" section on the right side of the page. Download the
+latest .dmg file. Open it and drag the app to your Applications folder, just
+like any other Mac app.
+
+If the Mac says the app is from an "unidentified developer," go to System
+Settings > Privacy & Security and click "Open Anyway."
+
+
+STEP 3: LAUNCH AND CHOOSE RESTORE
+
+When you open the app for the first time, you will see a welcome screen with
+two options:
+
+    "Create New Vault"           — Do NOT click this.
+    "Restore Existing Vault"     — Click this.
+
+
+STEP 4: ENTER YOUR 12 WORDS
+
+The app will show you 12 numbered text fields. Type each word from your seed
+phrase into the correct numbered field. Make sure:
+
+    - Every word is spelled correctly
+    - Every word is in the correct position (word 1 in slot 1, etc.)
+    - All words are lowercase
+    - There are no extra spaces before or after any word
+
+If you make a mistake, the app will tell you the seed phrase is invalid.
+Double-check your words and try again. The most common errors are:
+
+    - Swapped words (word 3 and word 4 in the wrong positions)
+    - Misspelled words (the words come from a specific list of 2,048 words —
+      "abscent" is not valid, "absent" is)
+    - Missing a word (entering only 11 words)
+
+
+STEP 5: POINT TO YOUR ENCRYPTED FOLDER
+
+The app will ask you to select the folder containing your backed-up encrypted
+vault files. Navigate to wherever your backup is:
+
+    - If on an external drive: plug it in, open Finder, navigate to the drive
+    - If on iCloud: open Finder, look in the iCloud Drive section
+    - If on Time Machine: open Time Machine, navigate to the date when the
+      vault was last known to be working, find the folder
+
+Select the folder that contains the .enc files. It might be called
+"BitcoinVault" or whatever name was chosen during original setup.
+
+
+STEP 6: WAIT FOR RESTORATION
+
+The app will:
+
+    1. Derive encryption keys from your seed phrase
+    2. Attempt to decrypt the vault index (the encrypted map of your files)
+    3. Scan the Bitcoin blockchain for any funds in your wallet
+
+This may take a minute or two. If successful, you will see a message:
+
+    "Vault restored."
+
+If the app says "Could not decrypt vault with this seed," then either:
+    - The seed words are wrong or in the wrong order — go back and recheck
+    - The encrypted folder is from a different vault (different seed)
+    - The encrypted folder is corrupted
+
+If the app says "Wallet restored. No encrypted vault files found," then:
+    - The seed is correct (your Bitcoin is accessible)
+    - But the folder you selected does not contain vault files
+    - Look for a different backup location
+
+
+STEP 7: VERIFY YOUR FILES
+
+Once restored, the app will show the lock screen. You will need to send a
+Bitcoin payment to unlock the vault and access your files (the same process
+as normal use).
+
+If you are an inheritor and the dead man's switch has been activated (the
+original owner has not made a proof-of-life payment within the set time
+period), the vault may open without a Bitcoin payment — just the seed.
+
+After unlocking, browse through the files and folders to confirm everything
+is present and accessible.
+
+
+STEP 8: SECURE THE NEW INSTALLATION
+
+Once you have confirmed the restore is successful:
+
+    - Set up a new backup of the vault folder on this Mac (iCloud, Time
+      Machine, or external drive)
+    - Store the seed phrase securely again (do not leave it sitting out)
+    - Consider whether the vault's unlock cost and frequency settings need
+      to be changed for your use
+
+
+================================================================================
+HOW TO BACK UP YOUR VAULT (FOR CURRENT USERS)
+================================================================================
+
+If you are the current user setting up backups for the first time, or
+verifying your backup strategy, you need to protect two things:
+
+PROTECT YOUR SEED PHRASE:
+
+    1. During setup, the app showed you 12 words. If you wrote them on paper,
+       that paper IS your backup. But paper burns, floods, and degrades.
+
+    2. For durable storage, stamp each word into a stainless steel plate
+       using a center punch and letter stamps. Metal seed plates are sold
+       by multiple vendors — search for "Bitcoin seed plate" or "metal seed
+       storage." Look for stainless steel plates with a grid for stamping
+       individual letters. Center punch style plates (where you mark each
+       letter with a single punch strike on a grid) are the simplest and
+       most durable option.
+
+    3. Store the metal plate somewhere secure and SEPARATE from your computer:
+       - A home safe (fireproof preferred)
+       - A bank safe deposit box
+       - With a trusted family member in a sealed envelope
+
+    4. NEVER photograph your seed phrase.
+       NEVER type it into any website.
+       NEVER store it in a notes app, email, cloud drive, or any digital format.
+       NEVER share it with anyone you do not fully trust with your entire vault.
+
+PROTECT YOUR ENCRYPTED FILES:
+
+    1. Your encrypted vault folder (default: ~/Documents/BitcoinVault/) must
+       be backed up separately. The files in this folder are encrypted — they
+       are safe to store in the cloud or on any backup medium.
+
+    2. Recommended backup methods (use at least one):
+       - iCloud Drive: If the vault folder is in your Documents folder and
+         iCloud Drive syncs your Documents, you already have a cloud backup.
+       - Time Machine: If you use Time Machine with an external drive, the
+         vault folder is included automatically.
+       - Manual copy: Periodically copy the vault folder to an external USB
+         drive and store it separately from your computer.
+
+    3. Verify your backup periodically. Once every few months, check that
+       your backup location has the vault folder and that it contains .enc
+       files with recent dates.
+
+
+================================================================================
+WHAT TO TELL YOUR INHERITOR
+================================================================================
+
+If you want someone to be able to access your vault after you die or become
+incapacitated, give them:
+
+    1. This document (printed or as a file they can access)
+
+    2. Access to your 12-word seed phrase. Options:
+       - Tell them where the metal plate is stored
+       - Include it in a sealed envelope in a safe deposit box
+       - Give it to an attorney with instructions
+
+    3. Access to your encrypted vault folder. Options:
+       - Share your iCloud account credentials (in your estate plan)
+       - Give them the Time Machine backup drive
+       - Give them a USB drive with a copy of the encrypted folder
+
+    4. One sentence of instruction:
+       "Install the Bitcoin Vault app from github.com/Evapotrack/bitcoin-vault.
+       Choose Restore Existing Vault. Enter the 12 words from the metal plate.
+       Point to the encrypted folder on the backup drive."
+
+If you have enabled the dead man's switch (V2 feature): the vault will
+automatically remove the Bitcoin payment requirement after your set countdown
+expires (e.g., 90 days without a proof-of-life payment). Your inheritor will
+only need the seed phrase and the encrypted folder — no Bitcoin wallet or
+Bitcoin knowledge required. The files are still encrypted and require the
+seed, but no payment is needed to unlock.
+
+
+================================================================================
+FREQUENTLY ASKED QUESTIONS
+================================================================================
+
+Q: I LOST MY SEED PHRASE BUT STILL HAVE THE APP RUNNING ON MY MAC.
+   CAN I GET MY SEED BACK?
+
+A: No. The seed phrase is never shown again after initial setup. It is stored
+   encrypted in your Mac's Keychain, but the app does not provide any way to
+   display it. If you have lost your written backup, your options are:
+
+   1. Create a NEW vault with a new seed phrase.
+   2. Unlock your current vault, copy all files out of the vault to a regular
+      folder on your Mac.
+   3. Add those files to the new vault.
+   4. Send any Bitcoin from the old vault's wallet to the new vault's address.
+   5. Write down and properly back up the new seed phrase.
+
+   This is your only option. There is no recovery without the seed.
+
+
+Q: MY MAC WAS STOLEN. ARE MY FILES SAFE?
+
+A: Your encrypted files are protected by AES-256-GCM encryption derived from
+   your seed phrase. Without the seed, the files are computationally
+   impossible to decrypt with any current or foreseeable technology.
+
+   However, the thief has your Mac, which has the seed stored in its Keychain.
+   If they can log into your Mac (they know your password, or your Mac was
+   unlocked when stolen), they may be able to access the vault.
+
+   Immediately:
+   1. If you have your seed, set up a new vault on a different Mac and restore.
+   2. Send any Bitcoin from the vault's wallet to a new address you control
+      (before the thief does).
+   3. Consider your files potentially compromised if the Mac was unlocked
+      or the login password was weak.
+
+
+Q: CAN I RESTORE ON A WINDOWS OR LINUX COMPUTER?
+
+A: No. Bitcoin Vault is a macOS application. You need a Mac to restore.
+
+
+Q: THE APP SAYS "COULD NOT DECRYPT" BUT I'M SURE MY SEED IS CORRECT.
+
+A: Double-check:
+   - Are all 12 words spelled correctly?
+   - Are they in the exact right order?
+   - Is the encrypted folder from THIS vault (not a different vault with a
+     different seed)?
+   - Is the encrypted folder complete (not partially copied)?
+
+   If you are absolutely certain the seed and folder are correct, the
+   encrypted vault index may be corrupted. Check for an older backup of
+   the vault folder (Time Machine, iCloud version history) and try again.
+
+
+Q: WHAT IF MEMPOOL.SPACE IS DOWN AND I CANNOT UNLOCK?
+
+A: The vault requires an internet connection to verify Bitcoin payments. If
+   mempool.space is temporarily down, wait and try again later. Outages are
+   typically brief. The app will show an error message but will not crash or
+   lose data.
+
+
+================================================================================
+Document created: April 6, 2026
+Creator: Andrew Brown
+All rights reserved.
+================================================================================

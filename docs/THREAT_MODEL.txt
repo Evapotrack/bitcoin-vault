@@ -1,0 +1,443 @@
+================================================================================
+BITCOIN VAULT — THREAT MODEL
+Systematic analysis of attack vectors, likelihood, impact, and mitigations
+Creator: Andrew Brown
+Date: April 6, 2026
+Status: Pre-development — threat model for reference during implementation
+================================================================================
+
+PURPOSE
+
+This document maps every identified attack vector against the Bitcoin Vault
+application. Each threat is assessed for likelihood (how probable the attack
+is), impact (what damage it causes), and mitigation (what the app does to
+prevent or limit it). This is the single reference for understanding what
+can go wrong and why the architecture is designed the way it is.
+
+The app handles two high-value assets: Bitcoin private keys and encrypted
+personal files. A successful attack could result in loss of funds, exposure
+of sensitive documents, or both. The threat model must account for both.
+
+
+================================================================================
+ATTACKER PROFILES
+================================================================================
+
+PROFILE 1 — REMOTE ATTACKER (no physical access)
+    Capabilities: Can interact with the app only through its network surface
+    (mempool.space API responses). Cannot touch the filesystem, cannot see
+    the screen, cannot install software.
+    Motivation: Steal Bitcoin from the hot wallet. Unlikely to care about
+    encrypted files (cannot access them remotely).
+
+PROFILE 2 — LOCAL ATTACKER WITH BRIEF PHYSICAL ACCESS
+    Capabilities: Has the user's unlocked Mac for minutes (e.g., left
+    unattended at a coffee shop). Can interact with the app UI, open
+    Terminal, copy files to USB.
+    Motivation: Steal Bitcoin, copy encrypted vault files for offline
+    cracking, or destroy files.
+
+PROFILE 3 — LOCAL ATTACKER WITH EXTENDED ACCESS
+    Capabilities: Has the user's Mac for hours or days (e.g., theft, seized
+    device, malicious roommate). Can install software, inspect filesystem,
+    run forensic tools.
+    Motivation: Extract seed/keys, decrypt vault files, steal Bitcoin.
+
+PROFILE 4 — SUPPLY CHAIN ATTACKER
+    Capabilities: Has compromised a dependency in the npm ecosystem or
+    injected malicious code into a package the app depends on.
+    Motivation: Exfiltrate private keys or redirect transaction outputs.
+
+PROFILE 5 — NETWORK ADVERSARY (MITM)
+    Capabilities: Can intercept and modify traffic between the app and
+    mempool.space. Cannot break TLS without a compromised CA.
+    Motivation: Feed false payment confirmations to trick the vault into
+    unlocking without real payment.
+
+PROFILE 6 — INSIDER / INHERITANCE SCENARIO
+    Capabilities: Has the 12-word seed (found on paper or metal plate) and
+    access to the encrypted vault folder (from backup).
+    Motivation: Legitimate access (inheritance) or unauthorized access
+    (someone who found the seed).
+
+
+================================================================================
+THREAT ANALYSIS — PRIVATE KEY EXTRACTION
+================================================================================
+
+THREAT: Seed extracted from macOS Keychain
+    Attacker: Profile 3 (extended physical access)
+    Attack: Access macOS Keychain via Keychain Access app or security CLI
+    tool. If the Mac is logged in, Keychain items may be accessible with
+    the user's login password.
+    Likelihood: MEDIUM — requires login access + knowing to look in Keychain
+    Impact: CRITICAL — full wallet drain + all files decryptable
+    Mitigation:
+        - Auto-lock timer re-locks the app and clears sensitive state
+        - macOS Keychain requires authentication for access to safeStorage
+          items (system-level protection)
+        - App cannot add additional protection beyond what safeStorage provides
+        - User responsibility: lock Mac screen when stepping away
+    Residual Risk: If attacker has Mac login password and sufficient time,
+    safeStorage items may be extractable. This is a fundamental limitation
+    of any hot wallet on a general-purpose computer.
+
+THREAT: Seed extracted from memory during runtime
+    Attacker: Profile 3 (extended access with forensic tools)
+    Attack: Memory dump of the Electron main process while the app is
+    running. Search for BIP39 word patterns or raw key bytes.
+    Likelihood: LOW — requires running forensic tools on a live process
+    Impact: CRITICAL — full wallet drain + all files decryptable
+    Mitigation:
+        - S1: Private keys derived on demand, zeroed immediately after use
+        - Seed stored in safeStorage, not held in JS variables persistently
+        - Keys exist in main process memory only during signing operations
+    Residual Risk: The seed is necessarily in memory during key derivation
+    and signing. A sufficiently fast memory dump during a signing operation
+    could capture it. Window of exposure is small (milliseconds) but nonzero.
+
+THREAT: Seed leaked through renderer process
+    Attacker: Profile 1 (remote, via XSS or compromised content) or
+    Profile 3 (local, via developer tools)
+    Attack: Exploit a renderer vulnerability to access Node.js APIs and
+    read key material from the main process.
+    Likelihood: LOW — requires XSS in a local-only app with no remote content
+    Impact: CRITICAL — full wallet drain + all files decryptable
+    Mitigation:
+        - S14: contextIsolation true, nodeIntegration false
+        - Preload script exposes only safe operations (no key methods)
+        - S15: External navigation blocked, no webviews, no remote content
+        - S17: Content Security Policy restricts script sources
+        - S19: All mempool.space data fetched in main process, not renderer
+        - Electron fuses hardened (RunAsNode disabled, etc.)
+    Residual Risk: An undiscovered Electron sandbox escape could bypass
+    context isolation. Electron updates should be applied promptly.
+
+THREAT: Seed leaked through git history
+    Attacker: Anyone (public repo)
+    Attack: Search git history for committed secrets (test seeds, hardcoded
+    mnemonics, .env files).
+    Likelihood: MEDIUM — common developer mistake
+    Impact: CRITICAL if real seed, LOW if test seed
+    Mitigation:
+        - P8: No real seeds, addresses, or file names in code or docs
+        - P10: Audit git history before going public
+        - P9: .gitignore covers vault data, encrypted index, temp files, logs
+    Residual Risk: Negligible if audit is thorough. Use git-secrets or
+    trufflehog before first public push.
+
+
+================================================================================
+THREAT ANALYSIS — TRANSACTION MANIPULATION
+================================================================================
+
+THREAT: Output address swapped by malware
+    Attacker: Profile 4 (supply chain) or Profile 3 (malware installed)
+    Attack: Malware intercepts the transaction building process and replaces
+    the destination address with the attacker's address. The user sees the
+    correct address in the UI but the signed transaction sends to the
+    attacker.
+    Likelihood: LOW-MEDIUM — clipboard hijacking malware exists in the wild.
+    The Atomic Wallet hack (2023) used a compromised npm package.
+    Impact: CRITICAL — funds sent to attacker's address
+    Mitigation:
+        - S23: Full transaction detail displayed before broadcast — user sees
+          all inputs, all outputs (with addresses), fee, and totals
+        - S24: No blind signing — the UI confirmation is the only review
+        - S20: Dependency audit, npm audit, version pinning
+        - User responsibility: verify the destination address on the
+          confirmation screen matches their intent
+    Residual Risk: If the display layer itself is compromised (showing one
+    address while signing another), the user cannot detect the swap. This
+    is the fundamental risk of hot wallet signing without a separate
+    hardware verification step (unlike BTC Agent's PSBT + hardware model).
+
+THREAT: Fee manipulation
+    Attacker: Profile 5 (network adversary controlling mempool.space responses)
+    Attack: Feed inflated fee estimates to trick the app into overpaying fees.
+    The excess fee is captured by the miner (not directly by the attacker
+    unless they are a miner, but the user loses sats).
+    Likelihood: LOW — requires MITM of TLS connection to mempool.space
+    Impact: MEDIUM — user overpays fees but funds not stolen
+    Mitigation:
+        - S11: Fee ceiling default 100 sat/vB — hard cap prevents extreme fees
+        - S23: Fee displayed to user before broadcast confirmation
+        - HTTPS to mempool.space (TLS protects against casual MITM)
+    Residual Risk: A compromised CA or TLS downgrade could enable MITM.
+    Future mitigation: custom Esplora backend (deferred).
+
+
+================================================================================
+THREAT ANALYSIS — UNLOCK BYPASS
+================================================================================
+
+THREAT: False payment confirmation from mempool.space
+    Attacker: Profile 5 (MITM) or compromised mempool.space
+    Attack: Feed a fake API response showing a confirmed payment to the
+    vault's unlock address when no real payment was made.
+    Likelihood: LOW — requires breaking TLS or compromising mempool.space
+    Impact: HIGH — vault unlocks without payment, files accessible
+    Mitigation:
+        - S12: Three mandatory checks enforced in main process IPC
+        - HTTPS to mempool.space
+        - Deferred: custom Esplora backend, Tor routing
+    Residual Risk: If mempool.space itself is compromised and returns
+    fabricated transaction data, the app cannot distinguish it from real
+    data. This is a fundamental dependency. Running your own Esplora/
+    Bitcoin node (deferred feature) eliminates this risk entirely.
+
+THREAT: 0-conf exploit
+    Attacker: Any
+    Attack: Send a transaction, trigger unlock during 0-conf window, then
+    double-spend the transaction so the payment never confirms.
+    Likelihood: N/A — the app requires 1 confirmation. No 0-conf mode exists.
+    Impact: N/A
+    Mitigation:
+        - Absolute design rule: 1 confirmation required. No override. No
+          0-conf option. Enforced in code, not UI.
+    Residual Risk: None for this specific attack. A 1-conf transaction can
+    theoretically be reversed by a chain reorganization, but this requires
+    mining power and is impractical for the small amounts involved.
+
+THREAT: Replay attack with previous txid
+    Attacker: Profile 2 or 3 (someone who observed a previous unlock)
+    Attack: Attempt to use a previously confirmed txid to satisfy a new
+    unlock request.
+    Likelihood: LOW — requires knowledge of previous txid
+    Impact: HIGH — free vault access without payment
+    Mitigation:
+        - S13: Every txid logged. Same txid cannot unlock twice.
+        - Each address used once — marked after successful or expired unlock.
+        - Fresh address derived per unlock event.
+    Residual Risk: None if txid logging is implemented correctly.
+
+THREAT: Wrong amount accepted
+    Attacker: Any (could be accidental or intentional)
+    Attack: Send less than the required amount and have it accepted as valid.
+    Likelihood: LOW — strict exact matching by design
+    Impact: MEDIUM — vault access at reduced cost
+    Mitigation:
+        - S12: Exact amount matching. Below: rejected. Above: rejected.
+        - Enforced in main process IPC, not UI.
+    Residual Risk: None if amount comparison is implemented correctly.
+    Use integer comparison on satoshi values (no floating point).
+
+
+================================================================================
+THREAT ANALYSIS — FILE SECURITY
+================================================================================
+
+THREAT: Encrypted files stolen and brute-forced offline
+    Attacker: Profile 3 (copies vault folder to USB) or anyone who
+    accesses an iCloud/Time Machine backup
+    Attack: Copy encrypted vault files. Attempt offline brute force of the
+    encryption key.
+    Likelihood: MEDIUM for file theft, NEGLIGIBLE for successful brute force
+    Impact: CRITICAL if successful — all files exposed
+    Mitigation:
+        - AES-256-GCM — 256-bit key space, computationally infeasible to
+          brute force with current or foreseeable technology
+        - HKDF key derivation from HD seed — key is derived, not stored
+        - Per-file encryption keys — even theoretical partial break does
+          not expose other files
+    Residual Risk: AES-256-GCM is considered secure against all known attacks.
+    The risk is not in the encryption but in the seed (see seed extraction
+    threats above). If the attacker has the seed, they don't need to brute
+    force anything — they derive the keys directly.
+
+THREAT: Decrypted temp files recovered from disk
+    Attacker: Profile 3 (forensic tools on Mac)
+    Attack: After vault locks, use file recovery tools to find remnants of
+    decrypted files in the temp directory or in filesystem journal/cache.
+    Likelihood: LOW — requires forensic expertise
+    Impact: HIGH — sensitive file contents exposed
+    Mitigation:
+        - S8: Temp files overwritten with crypto.randomBytes before deletion
+        - P12: Secure temp directory with 0700 permissions (not /tmp)
+        - S25: On APFS, single-pass overwrite is sufficient (APFS does not
+          journal file contents)
+    Residual Risk: SSD wear leveling means overwritten data may persist in
+    unused flash cells. This is a hardware-level limitation that no software
+    can fully mitigate. For maximum security against forensic recovery,
+    users should enable FileVault (full-disk encryption) on their Mac.
+
+THREAT: Vault index corruption (accidental or malicious)
+    Attacker: Profile 2/3, or accidental (concurrent access, disk error)
+    Attack: Corrupt the encrypted vault index, making all files inaccessible
+    even with the correct seed.
+    Likelihood: LOW — requires deliberate action or rare disk error
+    Impact: CRITICAL — all files inaccessible (encrypted data on disk is
+    intact but the app cannot map IDs to files without the index)
+    Mitigation:
+        - S16: Single instance lock prevents concurrent access
+        - Vault index versioning with automatic backup before migration
+        - Encrypted index stored in user-visible folder (backed up by
+          iCloud/Time Machine)
+    Residual Risk: A corrupted index without a backup is catastrophic. The
+    encrypted files are still on disk but the mapping between file IDs and
+    original names/structure is lost. Users MUST maintain backups.
+
+
+================================================================================
+THREAT ANALYSIS — ELECTRON-SPECIFIC
+================================================================================
+
+THREAT: XSS in renderer leading to RCE
+    Attacker: Profile 1 (if any user-controlled content is rendered as HTML)
+    Attack: Inject script via filename, folder name, or any displayed text
+    that is rendered with innerHTML instead of textContent. If nodeIntegration
+    were enabled, this would give full system access.
+    Likelihood: LOW — app loads no remote content, all user text should be
+    rendered as text, not HTML
+    Impact: CRITICAL if nodeIntegration is on, LOW if properly isolated
+    Mitigation:
+        - S14: nodeIntegration false, contextIsolation true
+        - S7 (test): Verify all user-controlled content rendered as text
+        - S17: CSP prevents external script loading
+        - S15: External navigation blocked
+    Residual Risk: An Electron sandbox escape (0-day) could bypass isolation.
+    Keep Electron updated.
+
+THREAT: Malicious dependency exfiltrates keys
+    Attacker: Profile 4 (supply chain)
+    Attack: A compromised npm package included in the build reads safeStorage
+    or in-memory key material and sends it to an external server.
+    Likelihood: LOW-MEDIUM — supply chain attacks on crypto wallets have
+    occurred (Atomic Wallet 2023, event-stream 2018)
+    Impact: CRITICAL — full wallet drain + all files decryptable
+    Mitigation:
+        - S20: Pin all dependency versions in package-lock.json
+        - npm audit before each release
+        - S17: CSP connect-src restricts outbound connections to self +
+          mempool.space only (blocks exfiltration to arbitrary servers)
+        - P11: No analytics/telemetry packages that could be hijacked
+        - Minimal dependency count — use Node.js built-ins (crypto, zlib)
+          wherever possible
+    Residual Risk: A compromised package could exfiltrate via DNS or other
+    covert channels that CSP does not block. Manual dependency review is
+    the strongest mitigation for a project handling signing authority.
+
+THREAT: Electron auto-updater compromise
+    Attacker: Profile 1 (MITM on update channel)
+    Attack: If the app uses Electron's auto-update mechanism, an attacker
+    who can MITM the update server can push a malicious update.
+    Likelihood: N/A — app does not use auto-update (by design)
+    Impact: N/A
+    Mitigation:
+        - No auto-updater. Updates are manual. User downloads from GitHub
+          releases and verifies.
+    Residual Risk: None for this specific attack.
+
+
+================================================================================
+THREAT ANALYSIS — PRIVACY
+================================================================================
+
+THREAT: Address correlation via mempool.space
+    Attacker: mempool.space operator or anyone with access to their logs
+    Attack: Correlate queried addresses to identify that they belong to the
+    same wallet / same user. Over time, build a profile of unlock frequency
+    and wallet balance.
+    Likelihood: MEDIUM — mempool.space logs are accessible to the operator
+    Impact: MEDIUM — privacy loss (unlock patterns, balance visible)
+    Mitigation:
+        - P1: Only address queries leave the device
+        - P2: Fresh address per unlock — no single address queried repeatedly
+        - Deferred: Tor routing, custom Esplora backend
+    Residual Risk: Until Tor or custom backend is implemented, mempool.space
+    can correlate queries from the same IP. Using a VPN partially mitigates.
+
+THREAT: On-chain analysis links unlock payments
+    Attacker: Any chain analyst
+    Attack: If the user consolidates UTXOs from multiple unlock payments,
+    the consolidation transaction links those addresses on-chain, revealing
+    they belong to the same wallet.
+    Likelihood: HIGH if consolidation is used (V3 feature)
+    Impact: MEDIUM — privacy loss (multiple unlock events linked)
+    Mitigation:
+        - P3: Consolidation tradeoff documented for user
+        - Consolidation is optional and user-initiated
+    Residual Risk: Fundamental tradeoff — consolidation saves fees but links
+    addresses. User must decide.
+
+
+================================================================================
+THREAT ANALYSIS — PHYSICAL AND SOCIAL
+================================================================================
+
+THREAT: $5 wrench attack (physical coercion)
+    Attacker: Profile 2/3 with willingness to use force
+    Attack: Physically coerce the user into unlocking the vault and sending
+    Bitcoin or revealing file contents.
+    Likelihood: LOW in most contexts
+    Impact: CRITICAL — full loss of funds and file exposure
+    Mitigation:
+        - Spending constraints (daily limit, max transaction) slow extraction
+        - Auto-lock timer limits window of access
+        - Deletion restriction on sensitive files prevents destruction
+        - Plausible deniability: NOT a feature of this app. The vault's
+          existence is visible on disk.
+    Residual Risk: No software can defend against physical coercion. This
+    is a hot wallet — amounts should be small enough that the loss is
+    tolerable. For high-value assets, use hardware cold storage.
+
+THREAT: Unauthorized inheritance access
+    Attacker: Profile 6 (someone who finds the seed)
+    Attack: Someone finds the metal seed plate and accesses the vault
+    before the intended inheritor or before the dead man's switch triggers.
+    Likelihood: MEDIUM — depends on seed storage security
+    Impact: HIGH — full access to funds and files
+    Mitigation:
+        - Seed stored separately from computer (home safe, bank box)
+        - Dead man's switch (V2) provides a controlled inheritance path
+        - Until V2: the seed holder has full access by design (this is how
+          self-custody works)
+    Residual Risk: Inherent to self-custody. The seed IS the master key.
+    Physical security of the seed is the user's responsibility.
+
+
+================================================================================
+RISK SUMMARY
+================================================================================
+
+CRITICAL RISKS (mitigated but residual risk exists):
+    1. Seed extraction from macOS Keychain (Profile 3) — mitigated by
+       safeStorage + auto-lock. Residual: login access = Keychain access.
+    2. Supply chain attack (Profile 4) — mitigated by CSP + audit + pinning.
+       Residual: covert exfiltration channels.
+    3. Output address swap (Profile 4) — mitigated by transaction detail
+       display. Residual: compromised display layer.
+
+HIGH RISKS (well-mitigated):
+    4. Unlock bypass via false confirmations (Profile 5) — mitigated by
+       HTTPS + 3-check verification. Residual: mempool.space compromise.
+    5. Encrypted file theft + offline attack — mitigated by AES-256-GCM.
+       Residual: negligible (brute force infeasible).
+
+MEDIUM RISKS (acceptable):
+    6. Address correlation via mempool.space — mitigated by fresh addresses.
+       Residual: IP-level correlation until Tor.
+    7. Temp file forensic recovery — mitigated by overwrite + secure dir.
+       Residual: SSD wear leveling.
+
+FUNDAMENTAL LIMITATIONS (cannot be fully mitigated by software):
+    - This is a hot wallet. Private keys exist on a general-purpose computer.
+    - Physical coercion bypasses all software security.
+    - macOS Keychain security depends on macOS login security.
+    - SSD wear leveling may preserve overwritten data in flash cells.
+    - mempool.space is a trusted third party until custom backend is built.
+
+STRONGEST MITIGATIONS:
+    - AES-256-GCM encryption (computationally unbreakable)
+    - 1-confirmation requirement with no override (eliminates 0-conf class)
+    - Context isolation + no nodeIntegration (eliminates XSS-to-RCE class)
+    - Strict exact amount matching (eliminates wrong-amount class)
+    - Txid replay protection (eliminates replay class)
+    - No remote content, no auto-updater (eliminates remote code exec class)
+
+
+================================================================================
+Document created: April 6, 2026
+Creator: Andrew Brown
+All rights reserved.
+================================================================================
