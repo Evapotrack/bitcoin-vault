@@ -84,7 +84,7 @@ export function LockScreen() {
   };
 
   const bip21Uri = unlockAddress
-    ? `bitcoin:${unlockAddress}?amount=${(unlockAmount / 100_000_000).toFixed(8)}`
+    ? `bitcoin:${unlockAddress}?amount=${(unlockAmount / 100_000_000)}`
     : '';
 
   // Password entry
