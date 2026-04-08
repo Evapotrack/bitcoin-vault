@@ -432,3 +432,134 @@ ipcMain.handle('update-settings', (_e, updates: { autoLockMinutes?: number; deno
   }
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
 });
+
+// ===== PROTECTION =====
+ipcMain.handle('set-file-protection', (_e, fileId: string, costSats: number | null, frequency: string | null) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  const file = currentIndex.files.find(f => f.id === fileId);
+  if (!file) return;
+  file.protectionCostSats = costSats ?? undefined;
+  file.protectionFrequency = (frequency as 'per-session' | 'daily' | 'weekly' | 'monthly') ?? undefined;
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex;
+});
+
+ipcMain.handle('set-folder-protection', (_e, folderId: string, costSats: number | null, frequency: string | null) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  const folder = currentIndex.folders.find(f => f.id === folderId);
+  if (!folder) return;
+  folder.protectionCostSats = costSats ?? undefined;
+  folder.protectionFrequency = (frequency as 'per-session' | 'daily' | 'weekly' | 'monthly') ?? undefined;
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex;
+});
+
+// ===== DEAD MAN'S SWITCH =====
+ipcMain.handle('configure-dead-man-switch', (_e, config: { enabled: boolean; countdownDays: number; proofOfLifeCostSats: number }) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  currentIndex.settings.deadManSwitch = {
+    enabled: config.enabled,
+    countdownDays: config.countdownDays,
+    proofOfLifeCostSats: config.proofOfLifeCostSats,
+    lastProofOfLifeTimestamp: Date.now(),
+  };
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex.settings.deadManSwitch;
+});
+
+ipcMain.handle('get-dead-man-switch-status', () => {
+  if (!currentIndex) return null;
+  const dms = currentIndex.settings.deadManSwitch;
+  if (!dms || !dms.enabled) return { enabled: false, expired: false, daysRemaining: 0 };
+  const elapsed = Date.now() - dms.lastProofOfLifeTimestamp;
+  const elapsedDays = elapsed / (1000 * 60 * 60 * 24);
+  const daysRemaining = Math.max(0, dms.countdownDays - elapsedDays);
+  const expired = daysRemaining <= 0;
+  return { enabled: true, expired, daysRemaining: Math.ceil(daysRemaining), countdownDays: dms.countdownDays, proofOfLifeCostSats: dms.proofOfLifeCostSats };
+});
+
+ipcMain.handle('proof-of-life-payment-confirmed', () => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  if (!currentIndex.settings.deadManSwitch) return;
+  currentIndex.settings.deadManSwitch.lastProofOfLifeTimestamp = Date.now();
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+});
+
+ipcMain.handle('check-dead-man-bypass', () => {
+  // Returns true if dead man's switch has expired — vault should open with seed only, no payment
+  if (!currentIndex) return false;
+  const dms = currentIndex.settings.deadManSwitch;
+  if (!dms || !dms.enabled) return false;
+  const elapsed = Date.now() - dms.lastProofOfLifeTimestamp;
+  const elapsedDays = elapsed / (1000 * 60 * 60 * 24);
+  return elapsedDays >= dms.countdownDays;
+});
+
+// ===== FEE ESTIMATION =====
+ipcMain.handle('get-fee-estimate-detail', async () => {
+  const fees = await feesModule.fetchFeeEstimates(currentNetworkType);
+  // Estimate costs for common operations
+  const unlockVsize = 1 * 68 + 1 * 31 + 11; // 1-in, 1-out unlock payment
+  const sendVsize = 2 * 68 + 2 * 31 + 11;   // 2-in, 2-out typical send
+  const consolidateVsize = (currentIndex?.addressIndex ?? 5) * 68 + 1 * 31 + 11;
+
+  return {
+    rates: fees,
+    estimates: {
+      unlockFee: { fast: Math.ceil(unlockVsize * fees.fast), medium: Math.ceil(unlockVsize * fees.medium), slow: Math.ceil(unlockVsize * fees.slow) },
+      sendFee: { fast: Math.ceil(sendVsize * fees.fast), medium: Math.ceil(sendVsize * fees.medium), slow: Math.ceil(sendVsize * fees.slow) },
+      consolidateFee: { fast: Math.ceil(consolidateVsize * fees.fast), medium: Math.ceil(consolidateVsize * fees.medium), slow: Math.ceil(consolidateVsize * fees.slow) },
+    },
+  };
+});
+
+// ===== CONSOLIDATION =====
+ipcMain.handle('build-consolidation', async (_e, feeRate: number) => {
+  if (!currentSeed || !currentIndex) throw new Error('Vault not ready');
+  const addresses = getDerivedAddresses();
+  const utxos = await utxoModule.fetchAllUtxos(addresses, currentNetworkType);
+  if (utxos.length < 2) throw new Error('Need at least 2 UTXOs to consolidate');
+
+  const totalValue = utxos.reduce((s, u) => s + u.value, 0);
+  const estimatedVsize = utxos.length * 68 + 1 * 31 + 11;
+  const fee = Math.ceil(estimatedVsize * feeRate);
+  if (totalValue <= fee) throw new Error('UTXOs too small to consolidate at this fee rate');
+
+  const changeAddr = wallet.deriveAddress(currentSeed, currentIndex.addressIndex, currentNetworkType).address;
+  return {
+    inputs: utxos.map(u => ({ txid: u.txid, vout: u.vout, value: u.value })),
+    outputs: [{ address: changeAddr, value: totalValue - fee }],
+    fee,
+    feeRate: Math.ceil(fee / estimatedVsize),
+    totalIn: totalValue,
+    totalOut: totalValue - fee,
+  };
+});
+
+ipcMain.handle('broadcast-consolidation', async (_e, feeRate: number) => {
+  if (!currentSeed || !currentIndex) throw new Error('Vault not ready');
+  const addresses = getDerivedAddresses();
+  const utxos = await utxoModule.fetchAllUtxos(addresses, currentNetworkType);
+  if (utxos.length < 2) throw new Error('Need at least 2 UTXOs');
+
+  const totalValue = utxos.reduce((s, u) => s + u.value, 0);
+  const estimatedVsize = utxos.length * 68 + 1 * 31 + 11;
+  const fee = Math.ceil(estimatedVsize * feeRate);
+  const outputValue = totalValue - fee;
+  if (outputValue <= 546) throw new Error('Consolidated output below dust');
+
+  // Derive a fresh address for the consolidated output
+  const consolidateAddr = wallet.deriveAddress(currentSeed, currentIndex.addressIndex, currentNetworkType).address;
+  currentIndex.addressIndex++;
+
+  const seedCopy = Buffer.from(currentSeed);
+  const txid = await txModule.signAndBroadcast(
+    utxos, consolidateAddr, outputValue, feeRate, consolidateAddr,
+    seedCopy, currentIndex.addressIndex, currentNetworkType
+  );
+
+  if (currentVaultPath && currentMasterKey) {
+    vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  }
+  return txid;
+});

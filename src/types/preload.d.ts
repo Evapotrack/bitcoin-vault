@@ -27,6 +27,10 @@ export interface BitcoinVaultAPI {
   createFolder(name: string, parentId: string | null): Promise<string>;
   deleteFolder(folderId: string): Promise<VaultIndex>;
 
+  // Protection
+  setFileProtection(fileId: string, costSats: number | null, frequency: string | null): Promise<VaultIndex>;
+  setFolderProtection(folderId: string, costSats: number | null, frequency: string | null): Promise<VaultIndex>;
+
   // Bitcoin
   getUnlockAddress(): Promise<{ address: string; index: number }>;
   pollPayment(address: string, amountSats: number): Promise<{ confirmed: boolean; detected?: boolean; txid?: string }>;
@@ -35,6 +39,26 @@ export interface BitcoinVaultAPI {
   getFees(): Promise<{ fast: number; medium: number; slow: number }>;
   buildTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<TransactionDetail>;
   broadcastTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<string>;
+
+  // Consolidation
+  buildConsolidation(feeRate: number): Promise<TransactionDetail>;
+  broadcastConsolidation(feeRate: number): Promise<string>;
+
+  // Dead Man's Switch
+  configureDeadManSwitch(config: { enabled: boolean; countdownDays: number; proofOfLifeCostSats: number }): Promise<unknown>;
+  getDeadManSwitchStatus(): Promise<{ enabled: boolean; expired: boolean; daysRemaining: number; countdownDays?: number; proofOfLifeCostSats?: number }>;
+  proofOfLifeConfirmed(): Promise<void>;
+  checkDeadManBypass(): Promise<boolean>;
+
+  // Fee Estimation
+  getFeeEstimateDetail(): Promise<{
+    rates: { fast: number; medium: number; slow: number };
+    estimates: {
+      unlockFee: { fast: number; medium: number; slow: number };
+      sendFee: { fast: number; medium: number; slow: number };
+      consolidateFee: { fast: number; medium: number; slow: number };
+    };
+  }>;
 
   // Settings
   updateSettings(updates: { autoLockMinutes?: number; denomination?: string }): Promise<void>;

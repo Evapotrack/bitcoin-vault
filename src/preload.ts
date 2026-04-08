@@ -38,6 +38,26 @@ contextBridge.exposeInMainWorld('bitcoinVault', {
   broadcastTransaction: (toAddress: string, amountSats: number, feeRate: number) =>
     ipcRenderer.invoke('broadcast-transaction', toAddress, amountSats, feeRate),
 
+  // Protection
+  setFileProtection: (fileId: string, costSats: number | null, frequency: string | null) =>
+    ipcRenderer.invoke('set-file-protection', fileId, costSats, frequency),
+  setFolderProtection: (folderId: string, costSats: number | null, frequency: string | null) =>
+    ipcRenderer.invoke('set-folder-protection', folderId, costSats, frequency),
+
+  // Consolidation
+  buildConsolidation: (feeRate: number) => ipcRenderer.invoke('build-consolidation', feeRate),
+  broadcastConsolidation: (feeRate: number) => ipcRenderer.invoke('broadcast-consolidation', feeRate),
+
+  // Dead Man's Switch
+  configureDeadManSwitch: (config: { enabled: boolean; countdownDays: number; proofOfLifeCostSats: number }) =>
+    ipcRenderer.invoke('configure-dead-man-switch', config),
+  getDeadManSwitchStatus: () => ipcRenderer.invoke('get-dead-man-switch-status'),
+  proofOfLifeConfirmed: () => ipcRenderer.invoke('proof-of-life-payment-confirmed'),
+  checkDeadManBypass: () => ipcRenderer.invoke('check-dead-man-bypass'),
+
+  // Fee Estimation
+  getFeeEstimateDetail: () => ipcRenderer.invoke('get-fee-estimate-detail'),
+
   // Settings
   updateSettings: (updates: { autoLockMinutes?: number; denomination?: string }) =>
     ipcRenderer.invoke('update-settings', updates),

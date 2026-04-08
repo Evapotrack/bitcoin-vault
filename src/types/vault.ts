@@ -2,6 +2,13 @@ export type NetworkType = 'testnet' | 'mainnet';
 export type Denomination = 'sats' | 'btc';
 export type UnlockFrequency = 'per-session' | 'daily' | 'weekly' | 'monthly';
 
+export interface DeadManSwitch {
+  enabled: boolean;
+  countdownDays: number;        // e.g., 90 days
+  lastProofOfLifeTimestamp: number;  // epoch ms of last proof-of-life payment
+  proofOfLifeCostSats: number;  // cost to reset the timer
+}
+
 export interface VaultConfig {
   networkType: NetworkType;
   unlockCostSats: number;
@@ -9,6 +16,7 @@ export interface VaultConfig {
   vaultFolderPath: string;
   autoLockMinutes: number;
   denomination: Denomination;
+  deadManSwitch?: DeadManSwitch;
 }
 
 export interface VaultFile {
@@ -27,6 +35,13 @@ export interface VaultFolder {
   name: string;
   parentId: string | null;
   createdAt: number;
+  protectionCostSats?: number;
+  protectionFrequency?: UnlockFrequency;
+}
+
+export interface ProtectionSettings {
+  costSats: number;
+  frequency: UnlockFrequency;
 }
 
 export interface VaultIndex {
