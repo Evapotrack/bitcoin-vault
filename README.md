@@ -140,12 +140,13 @@ There is no recovery without the seed. No support team, no reset, no backdoor. T
 
 ## Documentation
 
-- `VAULT_PROGRESS.md` — Full project document: design decisions, architecture, UI/UX, security (25 items), privacy (12 items), testing (24 cases)
-- `VAULT_NOTEBOOK.md` — Educational overview (what, how, why, limits, security, privacy)
-- `SECURITY_TEST_PROCEDURES.txt` — Step-by-step test execution guide for all 24 test cases
-- `THREAT_MODEL.txt` — Systematic analysis of attack vectors with mitigations
-- `RECOVERY_AND_BACKUP_GUIDE.txt` — Non-technical guide for restoring from backup
-- `CHANGELOG.txt` — Version history and release notes
+- [`docs/VAULT_PROGRESS.md`](docs/VAULT_PROGRESS.md) — Full project document: design decisions, architecture, UI/UX, security (25 items), privacy (12 items)
+- [`docs/VAULT_NOTEBOOK.md`](docs/VAULT_NOTEBOOK.md) — Educational overview (what, how, why, limits, security, privacy)
+- [`docs/THREAT_MODEL.txt`](docs/THREAT_MODEL.txt) — Systematic analysis of attack vectors with mitigations
+- [`docs/RECOVERY_AND_BACKUP_GUIDE.txt`](docs/RECOVERY_AND_BACKUP_GUIDE.txt) — Non-technical guide for restoring from backup
+- [`docs/TESTING_PLAN.md`](docs/TESTING_PLAN.md) — Pre-release testing checklist organized by severity
+- [`docs/SUMMARY.md`](docs/SUMMARY.md) — Community-facing project summary with privacy/security section
+- [`docs/CRITICAL_REVIEW.md`](docs/CRITICAL_REVIEW.md) — Honest critical review from a Bitcoin researcher perspective
 
 ## License
 
