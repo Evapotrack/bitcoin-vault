@@ -20,16 +20,23 @@ export function LockScreen() {
     setPasswordError('');
     setAuthenticated(true);
 
-    // Load vault to get config and start payment flow
+    // Load vault to get config
     try {
       const index = await window.bitcoinVault.loadVault();
-      setUnlockAmount(index.settings.unlockCostSats);
 
+      // Check dead man's switch — if expired, skip payment entirely
+      const dmsBypassed = await window.bitcoinVault.checkDeadManBypass();
+      if (dmsBypassed) {
+        setUnlocked(true);
+        setView('vault');
+        return;
+      }
+
+      // Normal payment flow
+      setUnlockAmount(index.settings.unlockCostSats);
       const { address } = await window.bitcoinVault.getUnlockAddress();
       setUnlockAddress(address);
       setPaymentStatus('waiting');
-
-      // Start polling
       startPolling(address, index.settings.unlockCostSats);
     } catch (err) {
       setPaymentError('Failed to load vault');

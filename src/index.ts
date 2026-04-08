@@ -438,6 +438,9 @@ ipcMain.handle('set-file-protection', (_e, fileId: string, costSats: number | nu
   if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
   const file = currentIndex.files.find(f => f.id === fileId);
   if (!file) return;
+  if (costSats !== null && costSats < 750) throw new Error('Minimum protection cost is 750 sats');
+  const validFreqs = ['per-session', 'daily', 'weekly', 'monthly'];
+  if (frequency !== null && !validFreqs.includes(frequency)) throw new Error('Invalid frequency');
   file.protectionCostSats = costSats ?? undefined;
   file.protectionFrequency = (frequency as 'per-session' | 'daily' | 'weekly' | 'monthly') ?? undefined;
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
@@ -448,6 +451,9 @@ ipcMain.handle('set-folder-protection', (_e, folderId: string, costSats: number 
   if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
   const folder = currentIndex.folders.find(f => f.id === folderId);
   if (!folder) return;
+  if (costSats !== null && costSats < 750) throw new Error('Minimum protection cost is 750 sats');
+  const validFreqs = ['per-session', 'daily', 'weekly', 'monthly'];
+  if (frequency !== null && !validFreqs.includes(frequency)) throw new Error('Invalid frequency');
   folder.protectionCostSats = costSats ?? undefined;
   folder.protectionFrequency = (frequency as 'per-session' | 'daily' | 'weekly' | 'monthly') ?? undefined;
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
@@ -501,7 +507,14 @@ ipcMain.handle('get-fee-estimate-detail', async () => {
   // Estimate costs for common operations
   const unlockVsize = 1 * 68 + 1 * 31 + 11; // 1-in, 1-out unlock payment
   const sendVsize = 2 * 68 + 2 * 31 + 11;   // 2-in, 2-out typical send
-  const consolidateVsize = (currentIndex?.addressIndex ?? 5) * 68 + 1 * 31 + 11;
+  // Use actual UTXO count for consolidation estimate (fetch if possible)
+  let utxoCount = 2;
+  try {
+    const addrs = getDerivedAddresses();
+    const utxos = await utxoModule.fetchAllUtxos(addrs, currentNetworkType);
+    utxoCount = Math.max(utxos.length, 2);
+  } catch { /* use default */ }
+  const consolidateVsize = utxoCount * 68 + 1 * 31 + 11;
 
   return {
     rates: fees,
@@ -548,9 +561,8 @@ ipcMain.handle('broadcast-consolidation', async (_e, feeRate: number) => {
   const outputValue = totalValue - fee;
   if (outputValue <= 546) throw new Error('Consolidated output below dust');
 
-  // Derive a fresh address for the consolidated output
-  const consolidateAddr = wallet.deriveAddress(currentSeed, currentIndex.addressIndex, currentNetworkType).address;
-  currentIndex.addressIndex++;
+  // Use change address path for consolidation (separate from receive addresses)
+  const consolidateAddr = wallet.deriveChangeAddress(currentSeed, 0, currentNetworkType).address;
 
   const seedCopy = Buffer.from(currentSeed);
   const txid = await txModule.signAndBroadcast(
