@@ -38,7 +38,7 @@ No accounts. No subscriptions. No counterparty risk. One seed backs up everythin
 
 **Three mandatory verification checks** (enforced in the app's main process, not just the UI):
 1. Transaction pays to the exact derived address
-2. Amount is exactly the required unlock cost (no tolerance)
+2. Amount is at least the required unlock cost (overpayment accepted, underpayment rejected)
 3. At least one confirmation on the base chain
 
 **Encryption:** AES-256-GCM with per-file keys derived via HKDF from the HD seed. Each file has its own encryption key — compromising one file's ciphertext does not expose others.
@@ -125,7 +125,7 @@ This entire project — design, architecture, code, documentation — was built 
 ### What the app protects
 
 - **Files at rest.** AES-256-GCM encryption with per-file keys derived via HKDF from your HD seed. Cracking one file's ciphertext does not expose others. On disk, files are opaque ciphertext with random IDs — an observer learns nothing about what you're protecting.
-- **Access control.** Unlock requires a confirmed on-chain Bitcoin payment — proof of work verification via the most secure settlement network ever built. Three mandatory checks enforced in the app's main process (not the UI): correct address, exact amount, at least one confirmation.
+- **Access control.** Unlock requires a confirmed on-chain Bitcoin payment — proof of work verification via the most secure settlement network ever built. Three mandatory checks enforced in the app's main process (not the UI): correct address, amount at or above required cost, at least one confirmation.
 - **Replay attacks.** Each transaction ID is logged. The same txid cannot unlock twice. Each address is used once and marked after unlock.
 - **Key material.** Private keys exist in memory only during signing operations, then are zeroed immediately. The seed is stored encrypted in macOS Keychain via Electron safeStorage. The renderer process never has access to key material — all cryptographic operations happen in the main process behind IPC.
 - **Temporary files.** Decrypted files are written to a secure directory (0600 permissions, inside app userData, not /tmp). On vault lock, all temp files are overwritten with random bytes and deleted. No plaintext remains on disk when locked.
