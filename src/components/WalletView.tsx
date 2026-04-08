@@ -73,7 +73,7 @@ export function WalletView() {
   const truncateAddr = (addr: string) => `${addr.slice(0, 12)}...${addr.slice(-8)}`;
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <h2 className="text-lg font-semibold text-white">Wallet</h2>
         <HelpLink />

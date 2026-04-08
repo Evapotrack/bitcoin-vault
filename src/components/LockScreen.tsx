@@ -127,7 +127,7 @@ export function LockScreen() {
         {/* QR Code */}
         <div className="flex justify-center">
           <div className="bg-white p-4 rounded-xl">
-            <QRCodeSVG value={bip21Uri} size={200} level="M" />
+            <QRCodeSVG value={bip21Uri} size={200} level="M" title="Bitcoin payment QR code" />
           </div>
         </div>
 

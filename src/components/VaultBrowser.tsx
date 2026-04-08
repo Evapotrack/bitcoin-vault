@@ -118,7 +118,7 @@ export function VaultBrowser() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-3xl mx-auto">
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -200,7 +200,7 @@ export function VaultBrowser() {
 
       {/* Delete overlay */}
       {deleteTarget && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true">
           <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
             <h3 className="text-white font-semibold text-lg">Delete {deleteTarget.type}?</h3>
             <p className="text-gray-400 text-sm">&quot;{deleteTarget.name}&quot; will be permanently deleted.
@@ -215,7 +215,7 @@ export function VaultBrowser() {
 
       {/* Protection overlay */}
       {protectTarget && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true">
           <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
             <h3 className="text-white font-semibold text-lg">Set Protection</h3>
             <p className="text-gray-400 text-sm">&quot;{protectTarget.name}&quot; — additional payment required to access.</p>
