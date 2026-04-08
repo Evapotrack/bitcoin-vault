@@ -40,6 +40,10 @@ export interface BitcoinVaultAPI {
   buildTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<TransactionDetail>;
   broadcastTransaction(toAddress: string, amountSats: number, feeRate: number): Promise<string>;
 
+  // Deletion Cost
+  setFileDeletionCost(fileId: string, costSats: number): Promise<VaultIndex>;
+  setFolderDeletionCost(folderId: string, costSats: number): Promise<VaultIndex>;
+
   // Consolidation
   buildConsolidation(feeRate: number): Promise<TransactionDetail>;
   broadcastConsolidation(feeRate: number): Promise<string>;

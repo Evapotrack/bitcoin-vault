@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#030712"/>
+  <rect x="56" y="56" width="400" height="400" rx="60" fill="#111827" stroke="#374151" stroke-width="4"/>
+  <rect x="106" y="106" width="300" height="300" rx="20" fill="#1f2937"/>
+  <!-- Lock body -->
+  <rect x="186" y="230" width="140" height="110" rx="16" fill="#f97316"/>
+  <!-- Lock shackle -->
+  <path d="M206 230 V190 A50 50 0 0 1 306 190 V230" fill="none" stroke="#f97316" stroke-width="16" stroke-linecap="round"/>
+  <!-- Keyhole -->
+  <circle cx="256" cy="275" r="14" fill="#030712"/>
+  <rect x="251" y="280" width="10" height="24" rx="3" fill="#030712"/>
+  <!-- Bitcoin B -->
+  <text x="256" y="195" font-family="Arial, sans-serif" font-weight="bold" font-size="36" fill="#f97316" text-anchor="middle">&#8383;</text>
+</svg>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useVaultStore } from '../store/vaultStore';
 import { HelpLink } from './HelpLink';
-import type { UnlockFrequency } from '../types/vault';
+import type { UnlockFrequency, VaultIndex } from '../types/vault';
 
 export function VaultBrowser() {
   const { vaultIndex, setVaultIndex, currentFolderId, setCurrentFolder, currentFiles, currentFolders } = useVaultStore();
@@ -37,11 +37,18 @@ export function VaultBrowser() {
     setShowNewFolder(false);
   };
 
+  const [deletionBlocked, setDeletionBlocked] = useState<{ name: string; costSats: number } | null>(null);
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'file') {
-      const updated = await window.bitcoinVault.deleteFile(deleteTarget.id);
-      setVaultIndex(updated);
+      const result = await window.bitcoinVault.deleteFile(deleteTarget.id) as { deletionRequired?: boolean; costSats?: number } | VaultIndex;
+      if ('deletionRequired' in result && result.deletionRequired) {
+        setDeleteTarget(null);
+        setDeletionBlocked({ name: deleteTarget.name, costSats: result.costSats! });
+        return;
+      }
+      setVaultIndex(result as VaultIndex);
     } else {
       const updated = await window.bitcoinVault.deleteFolder(deleteTarget.id);
       setVaultIndex(updated);
@@ -258,6 +265,26 @@ export function VaultBrowser() {
               Payment flow for per-file access coming in a future update.
             </p>
             <button onClick={() => setAccessBlocked(null)}
+              className="w-full py-2 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Deletion blocked — file has deletion cost */}
+      {deletionBlocked && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 text-center">
+            <h3 className="text-white font-semibold text-lg">Deletion Protected</h3>
+            <p className="text-gray-400 text-sm">
+              &quot;{deletionBlocked.name}&quot; requires a Bitcoin payment to delete.
+            </p>
+            <div className="text-orange-400 font-mono text-2xl font-bold">
+              {deletionBlocked.costSats.toLocaleString()} sats
+            </div>
+            <p className="text-gray-600 text-xs">
+              Payment flow for deletion coming in a future update.
+            </p>
+            <button onClick={() => setDeletionBlocked(null)}
               className="w-full py-2 bg-gray-800 text-gray-300 rounded-lg text-sm hover:bg-gray-700">Close</button>
           </div>
         </div>

@@ -287,6 +287,12 @@ ipcMain.handle('open-file', (_e, fileId: string) => {
 
 ipcMain.handle('delete-file', (_e, fileId: string) => {
   if (!currentVaultPath || !currentMasterKey || !currentIndex) throw new Error('Vault not open');
+  const file = currentIndex.files.find(f => f.id === fileId);
+  if (!file) throw new Error('File not found');
+  // Check deletion cost — return cost info if payment required
+  if (file.deletionCostSats && file.deletionCostSats > 0) {
+    return { deletionRequired: true, costSats: file.deletionCostSats };
+  }
   vaultFiles.deleteEncryptedFile(fileId, currentVaultPath);
   currentIndex.files = currentIndex.files.filter(f => f.id !== fileId);
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
@@ -480,6 +486,29 @@ ipcMain.handle('set-folder-protection', (_e, folderId: string, costSats: number 
   if (frequency !== null && !validFreqs.includes(frequency)) throw new Error('Invalid frequency');
   folder.protectionCostSats = costSats ?? undefined;
   folder.protectionFrequency = (frequency as 'per-session' | 'daily' | 'weekly' | 'monthly') ?? undefined;
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex;
+});
+
+// ===== DELETION COST =====
+ipcMain.handle('set-file-deletion-cost', (_e, fileId: string, costSats: number) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  const file = currentIndex.files.find(f => f.id === fileId);
+  if (!file) return;
+  if (costSats < 1500) throw new Error('Minimum deletion cost is 1,500 sats');
+  if (file.deletionCostSats) throw new Error('Deletion cost is permanent and already set');
+  file.deletionCostSats = costSats;
+  vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
+  return currentIndex;
+});
+
+ipcMain.handle('set-folder-deletion-cost', (_e, folderId: string, costSats: number) => {
+  if (!currentIndex || !currentVaultPath || !currentMasterKey) return;
+  const folder = currentIndex.folders.find(f => f.id === folderId);
+  if (!folder) return;
+  if (costSats < 1500) throw new Error('Minimum deletion cost is 1,500 sats');
+  if (folder.deletionCostSats) throw new Error('Deletion cost is permanent and already set');
+  folder.deletionCostSats = costSats;
   vaultIndex.saveIndex(currentIndex, currentVaultPath, currentMasterKey);
   return currentIndex;
 });

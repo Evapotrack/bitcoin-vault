@@ -44,6 +44,10 @@ contextBridge.exposeInMainWorld('bitcoinVault', {
   setFolderProtection: (folderId: string, costSats: number | null, frequency: string | null) =>
     ipcRenderer.invoke('set-folder-protection', folderId, costSats, frequency),
 
+  // Deletion Cost
+  setFileDeletionCost: (fileId: string, costSats: number) => ipcRenderer.invoke('set-file-deletion-cost', fileId, costSats),
+  setFolderDeletionCost: (folderId: string, costSats: number) => ipcRenderer.invoke('set-folder-deletion-cost', folderId, costSats),
+
   // Consolidation
   buildConsolidation: (feeRate: number) => ipcRenderer.invoke('build-consolidation', feeRate),
   broadcastConsolidation: (feeRate: number) => ipcRenderer.invoke('broadcast-consolidation', feeRate),
