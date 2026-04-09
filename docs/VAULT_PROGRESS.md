@@ -257,7 +257,7 @@ Verification — secure and private:
         non-Bitcoin data ever leaves the device.
 
 Access: user sets two parameters at vault level:
-          (1) Sat amount — unlock cost (minimum 750 sats)
+          (1) Sat amount — unlock cost (minimum 1,500 sats)
           (2) Frequency — how long vault stays unlocked after confirmed payment
               (per-session / daily / weekly / monthly / custom)
         Both set during setup wizard. Both adjustable in Settings.
@@ -771,10 +771,9 @@ IMPORTANT — Bitcoin:
   S11: Fee ceiling default 100 sat/vB. Show fee before confirming.
   S12: Unlock verification — three mandatory checks enforced in main process IPC:
        (a) Transaction pays to exact derived address for this unlock request
-       (b) Amount is exactly the required unlock cost. Bitcoin outputs are
-           precise — no tolerance needed. Below or above: rejected. Sats
-           received by vault wallet but do not trigger unlock. Lock screen
-           shows message with received vs required amount.
+       (b) Amount is >= the required unlock cost. Overpayment accepted.
+           Below: rejected — sats received by vault wallet but do not
+           trigger unlock.
        (c) >= 1 confirmation on Bitcoin base chain
        No 0-conf. No override. No alternative path. Enforced in code, not UI.
   S13: Replay protection. Each txid logged. Same txid cannot unlock twice.

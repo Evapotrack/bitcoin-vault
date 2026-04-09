@@ -70,7 +70,7 @@ The app launches in testnet mode by default. Do not use with real sats or real f
 - Choose "Create New Vault" (or "Restore Existing Vault" if recovering from backup)
 - Write down your 12-word seed phrase on paper. This is the only time it will be shown.
 - Verify your seed by re-entering three randomly selected words
-- Choose testnet or mainnet, set your unlock cost (minimum 750 sats), choose an access frequency, and pick a folder for your encrypted files
+- Choose testnet or mainnet, set your unlock cost (minimum 1,500 sats), choose an access frequency, and pick a folder for your encrypted files
 
 **Adding files:**
 - Drag files into the vault browser or click "Add Files"

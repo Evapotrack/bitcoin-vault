@@ -29,7 +29,7 @@ The app is built with Electron, React, Tailwind CSS, and bitcoinjs-lib. It runs 
 
 The user experience has six main flows:
 
-SETUP: On first launch, the app generates a 12-word seed phrase and displays it for the user to write down on paper. The user verifies they wrote it correctly by re-entering three randomly selected words. Then they configure their vault: choose testnet or mainnet, set the unlock cost in sats (minimum 750), set the access frequency (how long the vault stays open after payment), and pick a folder location for encrypted files.
+SETUP: On first launch, the app generates a 12-word seed phrase and displays it for the user to write down on paper. The user verifies they wrote it correctly by re-entering three randomly selected words. Then they configure their vault: choose testnet or mainnet, set the unlock cost in sats (minimum 1,500), set the access frequency (how long the vault stays open after payment), and pick a folder location for encrypted files.
 
 LOCKING AND UNLOCKING: When the vault is locked, the app shows a QR code and a Bitcoin address. The user opens any Bitcoin wallet on their phone (Strike, Muun, BlueWallet, or any other) and sends the exact required amount to that address. The app polls mempool.space and detects the incoming transaction. It waits for one confirmation — the transaction must be mined into a block on the Bitcoin base chain. This takes approximately 10 minutes on average. Once confirmed, the vault decrypts its index and the user can access their files. Each unlock derives a fresh address from the HD wallet, so no address is ever reused.
 
@@ -123,7 +123,7 @@ The app includes no analytics, no telemetry, no crash reporter, and no phoning h
 
 File size is capped at 1GB per file in V1. Files above 100MB trigger a warning about encryption time and vault size. Chunked encryption for larger files is planned for V2.
 
-The minimum unlock cost is 750 sats — above Bitcoin's 546-sat dust threshold and large enough that the unlock payment is always worth more than the on-chain fee to send it. Users can set higher costs but not lower.
+The minimum unlock cost is 1,500 sats — above Bitcoin's 546-sat dust threshold and large enough that most wallets can send it without issues. Users can set higher costs but not lower.
 
 The app requires 1 confirmation on the Bitcoin base chain for every unlock — vault level and per-folder/file. This takes approximately 10 minutes on average. There is no 0-conf option and no override. This is a fundamental constraint of on-chain verification and the app's core security guarantee.
 
