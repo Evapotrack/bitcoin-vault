@@ -439,7 +439,60 @@ STRONGEST MITIGATIONS:
 
 
 ================================================================================
+APPENDIX: BRUTE-FORCE COST ANALYSIS (SATS-DENOMINATED)
+================================================================================
+
+How much would it cost, in satoshis, to brute-force the encryption?
+
+ENCRYPTION ARCHITECTURE:
+    AES-256-GCM with per-file keys derived via HKDF from a BIP39 HD seed.
+    The weakest link is the 12-word BIP39 seed (128 bits of entropy).
+    An attacker would target the seed, not AES-256 directly.
+
+COST BENCHMARK — BITCOIN MINING AS COMPUTE PROXY:
+    The Bitcoin network converts electricity into SHA-256 hashes and earns
+    sats for doing so. This gives a direct conversion from compute to sats.
+
+    Network hashrate:       ~600 EH/s (6 × 10^20 SHA-256 ops/sec)
+    Network revenue:        ~900 BTC/day (~32.85 trillion sats/year)
+    Hashes per year:        ~1.89 × 10^28
+    Cost per hash:          ~1.74 × 10^-15 sats
+
+BRUTE-FORCE COST — BIP39 SEED (128-BIT):
+    Operations needed:      2^128 ≈ 3.4 × 10^38
+    Cost in sats:           ~5.9 × 10^23 (590 sextillion sats)
+    Cost in BTC:            ~5.9 × 10^15 (5.9 quadrillion BTC)
+    Multiple of total BTC:  ~280 billion times the 21 million supply cap
+
+BRUTE-FORCE COST — AES-256 DIRECTLY (256-BIT):
+    Operations needed:      2^256 ≈ 1.16 × 10^77
+    Cost in sats:           ~2 × 10^62
+    Multiple of total BTC:  ~10^47 times the total supply
+
+COMPARISON TO UNLOCK COST:
+    Vault unlock cost:      1,500 sats
+    Seed crack cost:        ~5.9 × 10^23 sats
+    Ratio:                  ~3.9 × 10^20 (390 quintillion to 1)
+
+THERMODYNAMIC LIMIT:
+    Landauer's principle sets a minimum energy to erase one bit of
+    information: kT × ln(2) ≈ 2.75 × 10^-21 joules at room temperature.
+    Erasing 2^128 bits requires more energy than the Sun produces over
+    billions of years. The break-even point does not exist within the
+    laws of physics.
+
+CONCLUSION:
+    The 1,500 sat minimum unlock cost is an economic/UX decision, not a
+    security one. No amount of sats stored in the vault makes brute-force
+    profitable. Even if the vault contained every satoshi that will ever
+    exist (2.1 × 10^15 sats), an attacker would spend 280 billion times
+    that amount in compute energy to crack the seed. The cryptography is
+    unbreakable regardless of vault contents.
+
+
+================================================================================
 Document created: April 6, 2026
+Updated: April 8, 2026 (V2 audit fixes, brute-force cost appendix)
 Creator: Andrew Brown
 All rights reserved.
 ================================================================================
