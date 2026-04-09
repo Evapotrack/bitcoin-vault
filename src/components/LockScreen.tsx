@@ -177,9 +177,9 @@ export function LockScreen() {
                   </svg>
                 </div>
               </div>
-              <span className="text-white font-semibold">Payment confirmed</span>
+              <p className="text-white font-semibold">Payment confirmed</p>
               <button onClick={() => { setUnlocked(true); setView('vault'); }}
-                className="mt-2 px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-semibold transition-colors">
+                className="px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-semibold transition-colors">
                 Open Vault
               </button>
             </div>
